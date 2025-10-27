@@ -14,7 +14,7 @@ import Papa from 'papaparse';
 
 function sqlString(v: string | null | undefined): string {
   if (v === undefined || v === null) return 'NULL';
-  return `'${v.replace(/'/g, "''")}'`;
+  return `'${v.replace(/'/g, "''").replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`;
 }
 
 function toAsciiLower(s: string): string {
@@ -72,9 +72,9 @@ async function main() {
 
   const lines: string[] = [];
   lines.push('-- Import: 006_import_clean_csv (generated)');
-  lines.push('BEGIN;');
 
   const assigneeMap = buildAssigneeMap();
+  let contactId = 1; // Start from 1 since we'll be inserting sequentially
 
   for (const r of rows) {
     const first = (r['First Name'] || '').trim();
@@ -126,7 +126,7 @@ async function main() {
     const contactVals = [
       sqlString(first), sqlString(last), sqlString(emailPrimary), sqlString(emailSecondary), sqlString(company), sqlString(website), sqlString(companyLinkedin), sqlString(imdb), sqlString(facebook), sqlString(instagram), sqlString(linkedin), sqlString(wikipedia), sqlString(biography), sqlString(priority), String(seenFilm), String(docBranch), sqlString(locationCountry), sqlString(locationState), locationCityExpr, sqlString(locationStateText), sqlString(locationCityText), String(isActive), `CAST(strftime('%s','now') AS INTEGER) * 1000`
     ];
-    lines.push(`INSERT INTO contacts (${contactCols.join(',')}) VALUES (${contactVals.join(',')});`);
+    lines.push(`INSERT INTO contacts (id,${contactCols.join(',')}) VALUES (${contactId},${contactVals.join(',')});`);
 
     // Assignments
     const assignedRaw = (r['ASSIGNED TO'] || '')
@@ -139,15 +139,15 @@ async function main() {
         const key = a.toUpperCase();
         const uid = assigneeMap[key];
         if (uid === undefined) continue;
-        values.push(`(last_insert_rowid(), ${uid})`);
+        values.push(`(${contactId}, ${uid})`);
       }
       if (values.length) {
         lines.push(`INSERT OR IGNORE INTO contact_assignments (contact_id, user_id) VALUES ${values.join(',')};`);
       }
     }
+    
+    contactId++; // Increment for next contact
   }
-
-  lines.push('COMMIT;');
 
   fs.writeFileSync(outPath, lines.join('\n'));
   console.log(`Generated ${outPath}`);

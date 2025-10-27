@@ -66,7 +66,7 @@ type Stats = {
 };
 
 export default function PeopleTable() {
-  const API_PATH = process.env.NODE_ENV === 'development' ? '/api/people' : '/api/contacts';
+  const API_PATH = '/api/contacts';
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,5 +1,4 @@
 -- Seed: 004_seed_locations (generated)
-BEGIN;
 DELETE FROM cities;
 DELETE FROM states;
 DELETE FROM countries;
@@ -31624,4 +31623,3 @@ INSERT INTO cities (city, city_ascii, state_code, county_fips, county_name, lat,
 ('Ironville', 'ironville', 'PA', '42013', 'Blair', 40.6586, -78.2155, 0, 59.2, 'America/New_York', '16686'),
 ('Newkirk', 'newkirk', 'NM', '35019', 'Guadalupe', 35.0635, -104.2715, 0, 0, 'America/Denver', '88417'),
 ('Falcon Village', 'falcon village', 'TX', '48427', 'Starr', 26.5652, -99.1341, 0, 38.9, 'America/Chicago', '78545');
-COMMIT;
