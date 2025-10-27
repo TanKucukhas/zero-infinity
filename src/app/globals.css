@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Focus görünür olsun (accessibility) */
+:where(button, [role="button"], a, input, textarea, select):focus-visible {
+  outline: 2px solid theme(colors.brand.600);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar (WebKit) */
+*::-webkit-scrollbar { 
+  width: 10px; 
+  height: 10px; 
+}
+*::-webkit-scrollbar-thumb { 
+  background: #d4d4d8; 
+  border-radius: 9999px; 
+}
+.dark *::-webkit-scrollbar-thumb { 
+  background: #3f3f46; 
+}
+
+/* Custom properties */
+:root {
+  --header-height: 64px;
+}
+
+/* Premium SaaS glow effect */
+.shadow-glow {
+  box-shadow: 0 0 20px -8px rgba(99, 102, 241, 0.3);
+}
