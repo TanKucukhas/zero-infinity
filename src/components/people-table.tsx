@@ -14,7 +14,11 @@ import {
   MapPin,
   Building,
   Globe,
-  Calendar
+  Calendar,
+  X,
+  Sparkles,
+  User,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +31,7 @@ type Person = {
   lastName: string;
   email: string;
   secondEmail: string;
+  phone?: string;
   company: string;
   website: string;
   linkedin: string;
@@ -61,6 +66,7 @@ type Stats = {
 };
 
 export default function PeopleTable() {
+  const API_PATH = process.env.NODE_ENV === 'development' ? '/api/people' : '/api/contacts';
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +74,8 @@ export default function PeopleTable() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [assignedFilter, setAssignedFilter] = useState("all");
   const [contactedFilter, setContactedFilter] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 20,
@@ -95,7 +103,7 @@ export default function PeopleTable() {
         contacted: contactedFilter,
       });
 
-      const response = await fetch(`/api/people?${params}`);
+      const response = await fetch(`${API_PATH}?${params}`);
       const result = await response.json();
       
       if (result.success) {
@@ -142,12 +150,26 @@ export default function PeopleTable() {
     fetchPeople(newPage);
   };
 
+  // Generate avatar color based on initials
+  const getAvatarColor = (initials: string) => {
+    const colors = [
+      { bg: "bg-indigo-100", text: "text-indigo-700" },
+      { bg: "bg-teal-100", text: "text-teal-700" },
+      { bg: "bg-purple-100", text: "text-purple-700" },
+      { bg: "bg-pink-100", text: "text-pink-700" },
+      { bg: "bg-blue-100", text: "text-blue-700" },
+      { bg: "bg-emerald-100", text: "text-emerald-700" },
+    ];
+    const index = initials.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "HIGH": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      case "MEDIUM": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "LOW": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+      case "HIGH": return "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400";
+      case "MEDIUM": return "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400";
+      case "LOW": return "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400";
+      default: return "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400";
     }
   };
 
@@ -167,6 +189,22 @@ export default function PeopleTable() {
     setAssignedFilter("all");
     setContactedFilter("all");
   };
+
+  // Handle stats click to filter
+  const handleStatsFilter = (type: string, value: string) => {
+    if (type === "contacted") {
+      setContactedFilter(value);
+    } else if (type === "priority") {
+      setPriorityFilter(value);
+    } else {
+      handleClearSearch();
+    }
+  };
+
+  const activeFiltersCount = 
+    (priorityFilter !== "all" ? 1 : 0) +
+    (assignedFilter !== "all" ? 1 : 0) +
+    (contactedFilter !== "all" ? 1 : 0);
 
   if (loading) {
     return (
@@ -207,7 +245,7 @@ export default function PeopleTable() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -215,214 +253,387 @@ export default function PeopleTable() {
             People Management
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">
-            {pagination.total} people found
-            {stats && (
-              <span className="ml-2 text-sm">
-                • {stats.contacted} contacted • {stats.highPriority} high priority
-              </span>
-            )}
+            1–20 of {pagination.total} contacts
           </p>
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleImport}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
+          <Button variant="outline" size="sm" onClick={handleImport} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Import CSV
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="h-4 w-4" />
             Export
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
+      {/* Insight Bar */}
+      {stats && (
+        <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-brand-50 to-indigo-50 dark:from-brand-950/20 dark:to-indigo-950/20 rounded-lg border border-brand-200 dark:border-brand-900">
+          <div className="flex items-center gap-2 text-brand-700 dark:text-brand-400">
+            <TrendingUp className="h-5 w-5" />
+            <span className="text-sm font-medium">Insight</span>
+          </div>
+          <div className="h-6 w-px bg-brand-300 dark:bg-brand-800" />
+          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+            High priority contacts increased <span className="font-semibold text-brand-600 dark:text-brand-400">14%</span> this week
+          </p>
+        </div>
+      )}
+
+      {/* Interactive Stats */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button
+            onClick={() => handleStatsFilter("all", "all")}
+            className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-brand-300 dark:hover:border-brand-700 transition cursor-pointer text-left"
+          >
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{stats.totalPeople}</div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Total Contacts</div>
+          </button>
+          
+          <button
+            onClick={() => handleStatsFilter("contacted", "true")}
+            className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition cursor-pointer text-left"
+          >
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.contacted}</div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Contacted</div>
+          </button>
+          
+          <button
+            onClick={() => handleStatsFilter("priority", "HIGH")}
+            className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-rose-300 dark:hover:border-rose-700 transition cursor-pointer text-left"
+          >
+            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{stats.highPriority}</div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">High Priority</div>
+          </button>
+        </div>
+      )}
+
+      {/* Search and Filters */}
+      <div className="flex flex-col gap-4">
+        {/* Search Bar */}
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input
-              placeholder="Search people, companies, emails..."
+              placeholder="Search people, emails, companies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-sm"
-          >
-            <option value="all">All Priorities</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
-          </select>
           
-          <select
-            value={assignedFilter}
-            onChange={(e) => setAssignedFilter(e.target.value)}
-            className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-sm"
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2"
           >
-            <option value="all">All Assignees</option>
-            <option value="CK">CK</option>
-            <option value="BINA">BINA</option>
-          </select>
-          
-          <select
-            value={contactedFilter}
-            onChange={(e) => setContactedFilter(e.target.value)}
-            className="px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-sm"
-          >
-            <option value="all">All Status</option>
-            <option value="true">Contacted</option>
-            <option value="false">Not Contacted</option>
-          </select>
+            <Filter className="h-4 w-4" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs font-medium bg-brand-600 text-white rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+          </Button>
         </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Filters</h3>
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={handleClearSearch}
+                  className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Priority
+                </label>
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Assigned To
+                </label>
+                <select
+                  value={assignedFilter}
+                  onChange={(e) => setAssignedFilter(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
+                >
+                  <option value="all">All Assignees</option>
+                  <option value="CK">CK</option>
+                  <option value="BINA">BINA</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Status
+                </label>
+                <select
+                  value={contactedFilter}
+                  onChange={(e) => setContactedFilter(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800"
+                >
+                  <option value="all">All Status</option>
+                  <option value="true">Contacted</option>
+                  <option value="false">Not Contacted</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table */}
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-zinc-50 dark:bg-zinc-800">
+            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Person
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Company
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Contact
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Social
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Priority
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Assigned To
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Assigned
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Notes
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
-              {people.map((person) => (
-                <tr key={person.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                        {person.fullName}
+              {people.map((person) => {
+                const initials = person.assignedTo?.substring(0, 2).toUpperCase() || "UN";
+                const avatarColor = getAvatarColor(initials);
+                
+                return (
+                  <tr 
+                    key={person.id}
+                    className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                    onMouseEnter={() => setHoveredRow(person.id)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                  >
+                    <td className="px-4 py-1.5">
+                      <div>
+                        <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+                          {person.fullName}
+                        </div>
+                        {person.location && (
+                          <div className="flex items-center text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {person.location}
+                          </div>
+                        )}
                       </div>
-                      {person.location && (
-                        <div className="flex items-center text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {person.location}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  
-                  <td className="px-6 py-4">
-                    <div>
-                      {person.company && (
-                        <div className="flex items-center text-sm text-zinc-900 dark:text-zinc-100">
-                          <Building className="h-3 w-3 mr-1" />
-                          {person.company}
-                        </div>
-                      )}
-                      {person.website && (
-                        <div className="flex items-center text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                          <Globe className="h-3 w-3 mr-1" />
-                          <a 
-                            href={person.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="hover:text-brand-600 dark:hover:text-brand-400"
-                          >
-                            Website
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      {person.email && (
-                        <div className="flex items-center text-sm text-zinc-600 dark:text-zinc-400">
-                          <Mail className="h-3 w-3 mr-1" />
-                          <a 
-                            href={`mailto:${person.email}`}
-                            className="hover:text-brand-600 dark:hover:text-brand-400"
-                          >
-                            {person.email}
-                          </a>
-                        </div>
-                      )}
-                      {person.linkedin && person.linkedin !== "Search LinkedIn" && (
-                        <div className="flex items-center text-sm text-zinc-500 dark:text-zinc-400">
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      <div>
+                        {person.company && (
+                          <div className="flex items-center text-sm text-zinc-900 dark:text-zinc-100">
+                            <Building className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                            {person.company}
+                          </div>
+                        )}
+                        {person.website && (
+                          <div className="flex items-center text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                            <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <a 
+                              href={person.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="hover:text-brand-600 dark:hover:text-brand-400 truncate"
+                            >
+                              Website
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      <div className="space-y-0.5">
+                        {person.email && (
+                          <div className="flex items-center text-xs text-zinc-600 dark:text-zinc-400">
+                            <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <a 
+                              href={`mailto:${person.email}`}
+                              className="hover:text-brand-600 dark:hover:text-brand-400 truncate"
+                              title={person.email}
+                            >
+                              {person.email}
+                            </a>
+                          </div>
+                        )}
+                        {person.secondEmail && (
+                          <div className="flex items-center text-xs text-zinc-500 dark:text-zinc-400">
+                            <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="truncate" title={person.secondEmail}>
+                              {person.secondEmail}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      <div className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[150px]" title={person.phone}>
+                        {person.phone || "-"}
+                      </div>
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      <div className="flex gap-2 flex-wrap">
+                        {person.linkedin && person.linkedin !== "Search LinkedIn" && !person.linkedin.includes("Search") && (
                           <a 
                             href={person.linkedin} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="hover:text-brand-600 dark:hover:text-brand-400"
+                            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            title="LinkedIn"
                           >
-                            LinkedIn
+                            Linkedin
                           </a>
-                        </div>
+                        )}
+                        {person.facebook && !person.facebook.includes("Search") && (
+                          <a 
+                            href={person.facebook} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-700 hover:text-blue-800 dark:text-blue-500"
+                            title="Facebook"
+                          >
+                            FB
+                          </a>
+                        )}
+                        {person.instagram && !person.instagram.includes("Search") && (
+                          <a 
+                            href={person.instagram} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-pink-600 hover:text-pink-700 dark:text-pink-400"
+                            title="Instagram"
+                          >
+                            IG
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      {person.priority && (
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(person.priority)}`}>
+                          {person.priority}
+                        </span>
                       )}
-                    </div>
-                  </td>
-                  
-                  <td className="px-6 py-4">
-                    {person.priority && (
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(person.priority)}`}>
-                        {person.priority}
-                      </span>
-                    )}
-                  </td>
-                  
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      {person.assignedTo || "Unassigned"}
-                    </span>
-                  </td>
-                  
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      {person.assignedTo ? (
+                        <div className="flex items-center gap-2">
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium ${avatarColor.bg} ${avatarColor.text}`}>
+                            {initials}
+                          </div>
+                          <span className="text-xs text-zinc-600 dark:text-zinc-400" title={`Assigned to ${person.assignedTo}`}>
+                            {person.assignedTo}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-zinc-400 dark:text-zinc-600">Unassigned</span>
+                      )}
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
                         person.contacted 
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                       }`}>
                         {person.contacted ? "Contacted" : "Not Contacted"}
                       </span>
-                    </div>
-                  </td>
-                  
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    
+                    <td className="px-4 py-1.5">
+                      <div className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[200px]" title={person.hemalNotes || person.yetkinNotes}>
+                        {person.hemalNotes || person.yetkinNotes || "-"}
+                      </div>
+                    </td>
+                    
+                    <td className="px-4 py-1.5 text-right">
+                      <div className={`flex items-center justify-end gap-1 transition-opacity ${hoveredRow === person.id ? 'opacity-100' : 'opacity-0'}`}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0"
+                          title="View"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0"
+                          title="Edit"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0"
+                          title="More actions"
+                        >
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -432,7 +643,7 @@ export default function PeopleTable() {
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-zinc-600 dark:text-zinc-400">
-            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+            {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} contacts
           </div>
           
           <div className="flex items-center gap-2">
@@ -451,7 +662,7 @@ export default function PeopleTable() {
                 return (
                   <Button
                     key={page}
-                    variant={pagination.page === page ? "default" : "outline"}
+                    variant={pagination.page === page ? "primary" : "outline"}
                     size="sm"
                     onClick={() => handlePageChange(page)}
                     className="w-8 h-8 p-0"

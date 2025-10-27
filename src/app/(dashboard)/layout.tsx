@@ -10,7 +10,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </header>
       
       {/* Content */}
-      <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-6">
+      <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950">
         {children}
       </main>
     </div>

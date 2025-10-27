@@ -7,12 +7,12 @@ export async function createAdminUser() {
   try {
     // Create admin user
     await db.insert(users).values({
-      id: "admin-1",
       name: "Admin User",
+      lastName: "",
       email: "admin@zeroinfinity.com",
       role: "admin",
-      image: null
-    });
+      createdAt: Date.now()
+    } as any);
 
     console.log("Admin user created successfully!");
     return { success: true };

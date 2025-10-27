@@ -1,9 +1,11 @@
 export const runtime = "edge";
 import { z } from "zod";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const EnrichBody = z.object({ personId: z.string().min(1) });
 
-export async function POST(req: Request, env: any) {
+export async function POST(req: Request) {
+  const { env } = getCloudflareContext();
   const parsed = EnrichBody.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "personId required" }, { status: 400 });
   const { personId } = parsed.data;
@@ -45,5 +47,4 @@ export async function POST(req: Request, env: any) {
 
   return Response.json({ ok: true });
 }
-
 

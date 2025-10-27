@@ -30,3 +30,6 @@ sleep 2
 # Start development server
 echo "🚀 Starting development server..."
 npm run dev
+
+
+

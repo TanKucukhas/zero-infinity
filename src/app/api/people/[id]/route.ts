@@ -1,19 +1,22 @@
 export const runtime = "edge";
 import { z } from "zod";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const PersonUpdate = z.object({
   firstName: z.string().min(1),
   lastName: z.string().optional()
 });
 
-export async function GET(_req: Request, env: any, ctx: any) {
+export async function GET(_req: Request, ctx: any) {
+  const { env } = getCloudflareContext();
   const id = (ctx?.params?.id) as string;
   const row = await env.DB.prepare("SELECT * FROM people WHERE id=?1").bind(id).first();
   if (!row) return Response.json({ error: "not found" }, { status: 404 });
   return Response.json(row);
 }
 
-export async function PUT(req: Request, env: any, ctx: any) {
+export async function PUT(req: Request, ctx: any) {
+  const { env } = getCloudflareContext();
   const id = (ctx?.params?.id) as string;
   const parsed = PersonUpdate.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "invalid body" }, { status: 400 });
@@ -24,10 +27,9 @@ export async function PUT(req: Request, env: any, ctx: any) {
   return Response.json({ ok: true });
 }
 
-export async function DELETE(_req: Request, env: any, ctx: any) {
+export async function DELETE(_req: Request, ctx: any) {
+  const { env } = getCloudflareContext();
   const id = (ctx?.params?.id) as string;
   await env.DB.prepare("DELETE FROM people WHERE id=?1").bind(id).run();
   return Response.json({ ok: true });
 }
-
-

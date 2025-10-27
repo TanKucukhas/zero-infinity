@@ -168,3 +168,6 @@ CREATE INDEX IF NOT EXISTS idx_contact_person ON contact_methods(person_id);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+
+
+

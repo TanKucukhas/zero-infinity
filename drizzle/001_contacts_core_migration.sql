@@ -66,3 +66,6 @@ CREATE TABLE IF NOT EXISTS social_profiles_new (
 
 CREATE INDEX IF NOT EXISTS idx_social_contact ON social_profiles_new(contact_id);
 CREATE INDEX IF NOT EXISTS idx_social_kind ON social_profiles_new(kind);
+
+
+

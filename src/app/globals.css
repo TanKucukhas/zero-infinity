@@ -30,3 +30,12 @@
 .shadow-glow {
   box-shadow: 0 0 20px -8px rgba(99, 102, 241, 0.3);
 }
+
+/* Dark mode body background */
+body.dark {
+  background-color: #0a0a0a;
+}
+
+body.dark main {
+  background-color: #0a0a0a;
+}

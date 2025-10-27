@@ -1,24 +1,34 @@
 "use client";
 import { useTheme } from "@/hooks/use-theme";
 import { useUser } from "@/contexts/user-context";
-import { Moon, Sun, LogOut, Settings, User, Users } from "lucide-react";
+import { Moon, Sun, LogOut, Settings, User, Users, Search, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useUser();
   const pathname = usePathname();
+  const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
 
   const menuItems = [
     { href: "/contacts", label: "Contacts", icon: Users },
   ];
 
+  const handleGlobalSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (globalSearch.trim()) {
+      router.push(`/contacts?search=${encodeURIComponent(globalSearch)}`);
+    }
+  };
+
   return (
-    <div className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-6 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-6 dark:border-zinc-800 dark:bg-zinc-950 backdrop-blur-sm">
       {/* Left side - Logo and Navigation */}
       <div className="flex items-center gap-6">
         <Link href="/contacts" className="flex items-center gap-2">
@@ -51,9 +61,23 @@ export default function Navbar() {
           })}
         </nav>
       </div>
+
+      {/* Center - Global Search */}
+      <div className="hidden lg:flex flex-1 max-w-md mx-8">
+        <form onSubmit={handleGlobalSearch} className="w-full relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
+          <Input
+            type="text"
+            placeholder="Search people, companies, emails..."
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            className="pl-10 bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
+          />
+        </form>
+      </div>
       
-      {/* Right side - User menu */}
-      <div className="flex items-center gap-3">
+      {/* Right side - Theme, Notifications, User menu */}
+      <div className="flex items-center gap-2">
         {/* Theme Toggle */}
         <Button 
           variant="ghost" 
@@ -61,6 +85,11 @@ export default function Navbar() {
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </Button>
+
+        {/* Notifications */}
+        <Button variant="ghost" size="sm">
+          <Bell className="h-5 w-5" />
         </Button>
 
         {/* User Menu */}

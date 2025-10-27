@@ -19,6 +19,16 @@ Database (Drizzle + D1)
 - Push: `npm run db:push`
 - Studio (optional): `npm run db:studio`
 
+Local D1 setup
+- Ensure `wrangler.jsonc` has `d1_databases` with `{ "binding": "DB", "database_name": "people_intel" }` (keep `database_id` as-is for local).
+- Apply migrations locally: `npm run db:push:local` (uses `wrangler d1 execute` for all `drizzle/003+` SQL files).
+- Verify: `npx wrangler d1 execute people_intel --local --command "SELECT name FROM sqlite_master WHERE name='contacts_flat'"`.
+
+Cloudflare D1 (remote)
+- Create the DB once: `npx wrangler d1 create people_intel` and copy the returned `database_id` into `wrangler.jsonc`.
+- Apply to remote: `npm run db:push:remote`.
+- Deploy app: `npm run deploy` (OpenNext uses the same `wrangler.jsonc` binding `DB`).
+
 Build/Preview/Deploy (OpenNext)
 - Dev: `npm run dev`
 - Preview: `npm run preview`

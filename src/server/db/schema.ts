@@ -1,13 +1,13 @@
 import { sqliteTable, text, integer, real, uniqueIndex } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
 
+// Users (new structure)
 export const users = sqliteTable("users", {
-  id: text("id").primaryKey(),
-  name: text("name"),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  lastName: text("last_name"),
   email: text("email").notNull().unique(),
-  image: text("image"),
-  role: text("role").notNull().default("viewer"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
+  role: text("role", { enum: ["admin","editor","viewer","external"] }).notNull().default("viewer"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull()
 });
 
 export const accounts = sqliteTable("accounts", {
@@ -28,116 +28,126 @@ export const sessions = sqliteTable("sessions", {
   expires: integer("expires", { mode: "timestamp_ms" }).notNull()
 });
 
-export const people = sqliteTable("people", {
-  id: text("id").primaryKey(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  fullNameNorm: text("full_name_norm").notNull(),
-  
-  // Emails
-  primaryEmail: text("primary_email"),
-  secondaryEmail: text("secondary_email"),
-  otherEmail: text("other_email"),
-  assistantName: text("assistant_name"),
-  assistantEmail: text("assistant_email"),
-  
-  // Company & Location
-  company: text("company"),
-  companyWebsite: text("company_website"),
-  companyLinkedin: text("company_linkedin"),
-  title: text("title"),
-  locationText: text("location_text"),
-  countryCode: text("country_code"),
-  
-  // Status & Assignment
-  priority: text("priority").default("low"), // low|medium|high
-  assignedTo: text("assigned_to").references(() => users.id),
-  contacted: integer("contacted", { mode: "boolean" }).default(false),
-  seenFilm: integer("seen_film", { mode: "boolean" }).default(false),
-  docBranchMember: integer("doc_branch_member", { mode: "boolean" }).default(false),
-  status: text("status").default("new"), // new|enriched|queued|contacted|bounced
-  
-  // Metadata
-  confidence: real("confidence").default(0),
-  lastRefreshedAt: integer("last_refreshed_at", { mode: "timestamp_ms" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-}, (t) => ({
-  u_name_email: uniqueIndex("u_people_name_email").on(t.fullNameNorm, t.primaryEmail),
-  u_primary_email: uniqueIndex("u_people_primary_email").on(t.primaryEmail)
+// Locations
+export const countries = sqliteTable("countries", {
+  code: text("code").primaryKey(),
+  name: text("name").notNull()
+});
+
+export const states = sqliteTable("states", {
+  code: text("code").primaryKey(),
+  name: text("name").notNull(),
+  countryCode: text("country_code").notNull().references(() => countries.code)
+});
+
+export const cities = sqliteTable("cities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  city: text("city").notNull(),
+  cityAscii: text("city_ascii").notNull(),
+  stateCode: text("state_code").notNull().references(() => states.code),
+  countyFips: text("county_fips"),
+  countyName: text("county_name"),
+  lat: real("lat"),
+  lng: real("lng"),
+  population: integer("population"),
+  density: real("density"),
+  timezone: text("timezone"),
+  zips: text("zips")
+}, (table) => ({
+  idx_city_state: uniqueIndex("u_cities_name_state").on(table.cityAscii, table.stateCode)
 }));
 
-export const contactMethods = sqliteTable("contact_methods", {
-  id: text("id").primaryKey(),
-  personId: text("person_id").notNull().references(() => people.id),
-  type: text("type"),
-  value: text("value").notNull(),
-  verified: integer("verified", { mode: "boolean" }).default(false),
-  source: text("source"),
-  lastVerifiedAt: integer("last_verified_at", { mode: "timestamp_ms" })
-});
+// Contacts
+export const contacts = sqliteTable("contacts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
 
-export const socials = sqliteTable("social_profiles", {
-  id: text("id").primaryKey(),
-  contactId: text("contact_id").notNull().references(() => people.id), // renamed from personId
-  kind: text("kind").notNull(), // imdb|linkedin|instagram|facebook|wikipedia|website
-  url: text("url"),
-  handle: text("handle"),
-  verified: integer("verified", { mode: "boolean" }).default(false),
-  source: text("source"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
-});
+  firstName: text("first_name"),
+  lastName: text("last_name"),
 
-export const orgs = sqliteTable("orgs", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
+  emailPrimary: text("email_primary"),
+  emailSecondary: text("email_secondary"),
+
+  company: text("company"),
   website: text("website"),
-  linkedinUrl: text("linkedin_url")
+  companyLinkedin: text("company_linkedin"),
+
+  imdb: text("imdb"),
+  facebook: text("facebook"),
+  instagram: text("instagram"),
+  linkedin: text("linkedin"),
+  wikipedia: text("wikipedia"),
+
+  biography: text("biography"),
+
+  priority: text("priority", { enum: ["HIGH","MEDIUM","LOW","NONE"] }).notNull().default("NONE"),
+  seenFilm: integer("seen_film", { mode: "boolean" }).notNull().default(false),
+  docBranchMember: integer("doc_branch_member", { mode: "boolean" }).notNull().default(false),
+
+  locationCountry: text("location_country").references(() => countries.code),
+  locationState: text("location_state").references(() => states.code),
+  locationCity: integer("location_city").references(() => cities.id),
+  locationStateText: text("location_state_text"),
+  locationCityText: text("location_city_text"),
+
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  inactiveReason: text("inactive_reason"),
+  inactiveReasonUserId: integer("inactive_reason_user_id").references(() => users.id, { onDelete: "set null" }),
+  inactiveAt: integer("inactive_at", { mode: "timestamp_ms" }),
+
+  createdByUserId: integer("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull()
+}, (table) => ({
+  idx_name: uniqueIndex("u_contacts_name_email").on(table.firstName, table.lastName, table.emailPrimary)
+}));
+
+export const contactRelationships = sqliteTable("contact_relationships", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contactId: integer("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  relationshipOwnerUserId: integer("relationship_owner_user_id").references(() => users.id, { onDelete: "set null" }),
+  introducedByUserId: integer("introduced_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  relationshipStrength: integer("relationship_strength"),
+  lastContactAt: integer("last_contact_at", { mode: "timestamp_ms" }),
+  relationshipType: text("relationship_type", { enum: ["surface_level","mentor","supporter","colleague","friend","exec","custom"] }).default("custom"),
+  label: text("label")
 });
 
-export const employment = sqliteTable("employment", {
-  id: text("id").primaryKey(),
-  personId: text("person_id").notNull().references(() => people.id),
-  orgId: text("org_id").references(() => orgs.id),
-  title: text("title"),
-  startYear: integer("start_year"),
-  endYear: integer("end_year"),
-  current: integer("current", { mode: "boolean" }).default(false),
-  source: text("source")
+export const contactAssignments = sqliteTable("contact_assignments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contactId: integer("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" })
+}, (table) => ({
+  u_contact_user: uniqueIndex("u_contact_assignment").on(table.contactId, table.userId)
+}));
+
+export const contactHistory = sqliteTable("contact_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contactId: integer("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  action: text("action", { enum: ["created","updated","activated","deactivated","archived","deleted","assigned","unassigned"] }).notNull(),
+  changesJson: text("changes_json"),
+  reason: text("reason"),
+  performedByUserId: integer("performed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull()
 });
 
 export const notes = sqliteTable("notes", {
-  id: text("id").primaryKey(),
-  personId: text("person_id").references(() => people.id),
-  author: text("author"),
-  body: text("body"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contactId: integer("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  scope: text("scope", { enum: ["general","hemal","yetkin","private"] }).notNull().default("general"),
+  body: text("body").notNull(),
+  authorUserId: integer("author_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  isEdited: integer("is_edited", { mode: "boolean" }).notNull().default(false),
+  editedAt: integer("edited_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull()
 });
 
-export const outreach = sqliteTable("outreach", {
-  id: text("id").primaryKey(),
-  personId: text("person_id").references(() => people.id),
-  campaign: text("campaign"),
-  sentAt: integer("sent_at", { mode: "timestamp_ms" }),
-  respondedAt: integer("responded_at", { mode: "timestamp_ms" }),
-  status: text("status")
-});
-
-export const rawIngest = sqliteTable("raw_ingest", {
-  id: text("id").primaryKey(),
-  personId: text("person_id").references(() => people.id),
-  source: text("source").notNull(),
-  payloadJson: text("payload_json").notNull(),
-  fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
-  hash: text("hash").notNull().unique()
-});
-
-export const auditLog = sqliteTable("audit_log", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => users.id),
-  action: text("action").notNull(),
-  entity: text("entity").notNull(),
-  entityId: text("entity_id"),
-  metaJson: text("meta_json"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
+export const outreachEvents = sqliteTable("outreach_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contactId: integer("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  campaignKey: text("campaign_key"),
+  direction: text("direction", { enum: ["outbound","inbound"] }).notNull(),
+  channel: text("channel", { enum: ["email","phone","linkedin","whatsapp","in_person","other"] }).notNull().default("email"),
+  message: text("message"),
+  status: text("status", { enum: ["sent","delivered","opened","replied","bounced","failed"] }).default("sent"),
+  performedByUserId: integer("performed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull()
 });

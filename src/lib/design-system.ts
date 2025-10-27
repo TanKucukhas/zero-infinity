@@ -66,3 +66,6 @@ export const INPUT_VARIANTS = {
   default: 'border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 focus:border-brand-500 focus:ring-brand-500',
   error: 'border-red-300 dark:border-red-600 bg-white dark:bg-zinc-900 focus:border-red-500 focus:ring-red-500',
 } as const;
+
+
+

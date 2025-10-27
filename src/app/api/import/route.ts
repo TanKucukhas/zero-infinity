@@ -1,9 +1,11 @@
 export const runtime = "edge";
 import { z } from "zod";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const CsvBatch = z.object({ batch: z.array(z.record(z.any())) });
 
-export async function POST(req: Request, env: any) {
+export async function POST(req: Request) {
+  const { env } = getCloudflareContext();
   const raw = await req.text();
   if (raw.length > 5 * 1024 * 1024) {
     return Response.json({ error: "payload too large" }, { status: 413 });
@@ -36,5 +38,4 @@ export async function POST(req: Request, env: any) {
 
   return Response.json({ ok: true });
 }
-
 
