@@ -1,37 +1,149 @@
-export const runtime = "edge";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
-const PersonCreate = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().optional(),
-  primaryEmail: z.string().email().optional()
-});
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const search = searchParams.get("search") || "";
+    const priority = searchParams.get("priority") || "";
+    const contacted = searchParams.get("contacted") || "";
+    const assignedTo = searchParams.get("assigned_to") || "";
 
-export async function GET(req: Request, env: any) {
-  const url = new URL(req.url);
-  const page = Math.max(1, Number(url.searchParams.get("page") || 1));
-  const size = Math.min(100, Number(url.searchParams.get("pageSize") || 50));
-  const q = (url.searchParams.get("query") || "").toLowerCase();
-  const off = (page - 1) * size;
+    // Read CSV file
+    const csvPath = path.join(process.cwd(), "sample-data.csv");
+    const csvContent = fs.readFileSync(csvPath, "utf-8");
+    
+    // Parse CSV
+    const lines = csvContent.split("\n");
+    const headers = lines[3].split(","); // Row 4 has headers
+    
+    const allPeople = [];
+    
+    // Start from row 5 (index 4) to skip headers and empty rows
+    for (let i = 4; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const values = line.split(",");
+      
+      // Create person object
+      const person = {
+        id: `person-${i}`,
+        firstName: values[0] || "",
+        lastName: values[1] || "",
+        email: values[2] || "",
+        secondEmail: values[3] || "",
+        imdbEmail: values[4] || "",
+        assistantName: values[5] || "",
+        assistantEmail: values[6] || "",
+        company: values[7] || "",
+        website: values[8] || "",
+        companyLinkedin: values[9] || "",
+        imdb: values[10] || "",
+        facebook: values[11] || "",
+        instagram: values[12] || "",
+        linkedin: values[13] || "",
+        wikipedia: values[14] || "",
+        biography: values[15] || "",
+        priority: values[16] || "",
+        assignedTo: values[17] || "",
+        seenFilm: values[18] === "TRUE",
+        docBranchMember: values[19] === "TRUE",
+        contacted: values[20] === "TRUE",
+        hemalNotes: values[21] || "",
+        yetkinNotes: values[22] || "",
+        inviteSentJune: values[23] || "",
+        responseJune: values[24] || "",
+        inviteSentAugust: values[25] || "",
+        responseAugust: values[26] || "",
+        location: values[30] || "",
+        fullName: `${values[0] || ""} ${values[1] || ""}`.trim(),
+      };
+      
+      // Only add if has at least first name
+      if (person.firstName) {
+        allPeople.push(person);
+      }
+    }
 
-  const like = `%${q}%`;
-  const rows = await env.DB.prepare(
-    "SELECT * FROM people WHERE full_name_norm LIKE ?1 OR primary_email LIKE ?1 ORDER BY last_refreshed_at DESC LIMIT ?2 OFFSET ?3"
-  ).bind(like, size, off).all();
+    // Apply filters
+    let filteredPeople = allPeople.filter(person => {
+      // Search filter
+      if (search) {
+        const searchLower = search.toLowerCase();
+        const matchesSearch = 
+          person.fullName.toLowerCase().includes(searchLower) ||
+          person.email.toLowerCase().includes(searchLower) ||
+          person.company.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
 
-  return Response.json({ data: rows.results || [], page, pageSize: size });
+      // Priority filter
+      if (priority && priority !== "all") {
+        if (person.priority !== priority) return false;
+      }
+
+      // Contacted filter
+      if (contacted && contacted !== "all") {
+        const isContacted = contacted === "true";
+        if (person.contacted !== isContacted) return false;
+      }
+
+      // Assigned to filter
+      if (assignedTo && assignedTo !== "all") {
+        if (person.assignedTo !== assignedTo) return false;
+      }
+
+      return true;
+    });
+
+    // Calculate pagination
+    const total = filteredPeople.length;
+    const totalPages = Math.ceil(total / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedPeople = filteredPeople.slice(startIndex, endIndex);
+
+    // Calculate stats
+    const companies = new Set(allPeople.map(p => p.company).filter(Boolean));
+    const contactedCount = allPeople.filter(p => p.contacted).length;
+    const highPriorityCount = allPeople.filter(p => p.priority === "HIGH").length;
+    const mediumPriorityCount = allPeople.filter(p => p.priority === "MEDIUM").length;
+    const lowPriorityCount = allPeople.filter(p => p.priority === "LOW").length;
+
+    return NextResponse.json({
+      success: true,
+      data: paginatedPeople,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+      stats: {
+        totalPeople: allPeople.length,
+        totalCompanies: companies.size,
+        contacted: contactedCount,
+        notContacted: allPeople.length - contactedCount,
+        highPriority: highPriorityCount,
+        mediumPriority: mediumPriorityCount,
+        lowPriority: lowPriorityCount,
+      },
+    });
+    
+  } catch (error) {
+    console.error("Error reading CSV:", error);
+    return NextResponse.json(
+      { 
+        error: "Failed to load people data",
+        trace_id: Math.random().toString(36).substr(2, 9)
+      },
+      { status: 500 }
+    );
+  }
 }
-
-export async function POST(req: Request, env: any) {
-  const parsed = PersonCreate.safeParse(await req.json());
-  if (!parsed.success) return Response.json({ error: "invalid body" }, { status: 400 });
-  const { firstName, lastName = "", primaryEmail = null } = parsed.data;
-  const id = crypto.randomUUID();
-  const full = `${firstName} ${lastName}`.trim().toLowerCase();
-  await env.DB.prepare(
-    "INSERT OR IGNORE INTO people (id, first_name, last_name, full_name_norm, primary_email) VALUES (?1,?2,?3,?4,?5)"
-  ).bind(id, firstName, lastName, full, primaryEmail).run();
-  return Response.json({ ok: true, id });
-}
-
-

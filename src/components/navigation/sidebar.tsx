@@ -1,13 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Settings, FileText } from "lucide-react";
+import { Users, Settings } from "lucide-react";
 import classNames from "classnames";
 
 const menuItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/people", label: "People", icon: Users },
-  { href: "/import", label: "Import", icon: FileText },
+  { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

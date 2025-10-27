@@ -1,5 +1,5 @@
 import { Inter } from "next/font/google";
-import AppThemeProvider from "@/contexts/theme-context";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,9 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" suppressHydrationWarning>
       <body className={`${inter.className} bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased`}>
-        <AppThemeProvider>
+        <Providers>
           {children}
-        </AppThemeProvider>
+        </Providers>
       </body>
     </html>
   );

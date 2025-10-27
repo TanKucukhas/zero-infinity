@@ -36,7 +36,8 @@ export default function Login() {
 
       if (response.ok) {
         localStorage.setItem("user", JSON.stringify(data.user));
-        router.push("/");
+        // Reload page to update UserContext
+        window.location.href = "/contacts";
       } else {
         setError(data.error || "Login failed");
       }

@@ -33,15 +33,38 @@ export const people = sqliteTable("people", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   fullNameNorm: text("full_name_norm").notNull(),
+  
+  // Emails
   primaryEmail: text("primary_email"),
-  priority: integer("priority").default(0),
-  assignedTo: text("assigned_to").references(() => users.id),
+  secondaryEmail: text("secondary_email"),
+  otherEmail: text("other_email"),
+  assistantName: text("assistant_name"),
+  assistantEmail: text("assistant_email"),
+  
+  // Company & Location
+  company: text("company"),
+  companyWebsite: text("company_website"),
+  companyLinkedin: text("company_linkedin"),
+  title: text("title"),
   locationText: text("location_text"),
+  countryCode: text("country_code"),
+  
+  // Status & Assignment
+  priority: text("priority").default("low"), // low|medium|high
+  assignedTo: text("assigned_to").references(() => users.id),
+  contacted: integer("contacted", { mode: "boolean" }).default(false),
+  seenFilm: integer("seen_film", { mode: "boolean" }).default(false),
+  docBranchMember: integer("doc_branch_member", { mode: "boolean" }).default(false),
+  status: text("status").default("new"), // new|enriched|queued|contacted|bounced
+  
+  // Metadata
   confidence: real("confidence").default(0),
   lastRefreshedAt: integer("last_refreshed_at", { mode: "timestamp_ms" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
 }, (t) => ({
-  u_name_email: uniqueIndex("u_people_name_email").on(t.fullNameNorm, t.primaryEmail)
+  u_name_email: uniqueIndex("u_people_name_email").on(t.fullNameNorm, t.primaryEmail),
+  u_primary_email: uniqueIndex("u_people_primary_email").on(t.primaryEmail)
 }));
 
 export const contactMethods = sqliteTable("contact_methods", {
@@ -56,13 +79,13 @@ export const contactMethods = sqliteTable("contact_methods", {
 
 export const socials = sqliteTable("social_profiles", {
   id: text("id").primaryKey(),
-  personId: text("person_id").notNull().references(() => people.id),
-  network: text("network"),
+  contactId: text("contact_id").notNull().references(() => people.id), // renamed from personId
+  kind: text("kind").notNull(), // imdb|linkedin|instagram|facebook|wikipedia|website
   url: text("url"),
-  username: text("username"),
-  followers: integer("followers"),
+  handle: text("handle"),
+  verified: integer("verified", { mode: "boolean" }).default(false),
   source: text("source"),
-  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" })
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
 });
 
 export const orgs = sqliteTable("orgs", {
@@ -109,6 +132,12 @@ export const rawIngest = sqliteTable("raw_ingest", {
   hash: text("hash").notNull().unique()
 });
 
-
-
-
+export const auditLog = sqliteTable("audit_log", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  action: text("action").notNull(),
+  entity: text("entity").notNull(),
+  entityId: text("entity_id"),
+  metaJson: text("meta_json"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`)
+});

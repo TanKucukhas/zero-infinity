@@ -11,8 +11,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/logo") ||
-    pathname === "/robots.txt" ||
-    pathname === "/";
+    pathname === "/robots.txt";
 
   // For now, we'll allow access to dashboard pages
   // In production, you should implement proper session management

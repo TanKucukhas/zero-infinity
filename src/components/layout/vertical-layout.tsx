@@ -6,15 +6,21 @@ type VerticalLayoutProps = {
 
 export default function VerticalLayout({ sidebar, topbar, children }: VerticalLayoutProps) {
   return (
-    <div className="grid h-dvh grid-rows-[auto_1fr]">
-      <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white border-b border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
         {topbar}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="hidden h-full overflow-y-auto border-r border-zinc-200 bg-white p-4 lg:block dark:border-zinc-800 dark:bg-zinc-900">
+      </header>
+      
+      {/* Main Content */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside className="hidden lg:block w-64 border-r border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 overflow-y-auto">
           {sidebar}
         </aside>
-        <main className="h-full overflow-y-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+        
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-6">
           {children}
         </main>
       </div>
