@@ -57,19 +57,22 @@ export async function GET(req: Request) {
       lastName: r.last_name || '',
       email: r.email_primary || '',
       secondEmail: r.email_secondary || '',
-      phone: '',
       company: r.company || '',
       website: r.website || '',
       linkedin: r.linkedin || '',
       facebook: r.facebook || '',
       instagram: r.instagram || '',
+      imdb: r.imdb || '',
+      wikipedia: r.wikipedia || '',
       priority: r.priority || 'NONE',
       assignedTo: r.assigned_user_names || '',
       contacted: !!r.last_outreach_at,
       location,
       fullName,
-      hemalNotes: '',
-      yetkinNotes: ''
+      seenFilm: !!r.seen_film,
+      docBranchMember: !!r.doc_branch_member,
+      isActive: !!r.is_active,
+      createdAt: r.created_at
     };
   });
 

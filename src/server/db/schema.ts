@@ -66,6 +66,7 @@ export const contacts = sqliteTable("contacts", {
 
   emailPrimary: text("email_primary"),
   emailSecondary: text("email_secondary"),
+  phoneNumber: text("phone_number"),
 
   company: text("company"),
   website: text("website"),

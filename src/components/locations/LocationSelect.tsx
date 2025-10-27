@@ -1,6 +1,6 @@
 "use client";
 import * as React from 'react';
-import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from '@mui/material';
 
 type Country = { code: string; name: string };
 type State = { code: string; name: string };
@@ -27,6 +27,8 @@ export default function LocationSelect({ value, onChange }: Props) {
   const [countryCode, setCountryCode] = React.useState<string | ''>(value?.countryCode || '');
   const [stateCode, setStateCode] = React.useState<string | ''>(value?.stateCode || '');
   const [cityId, setCityId] = React.useState<number | ''>(value?.cityId || '');
+  const [stateText, setStateText] = React.useState<string>(value?.stateText || '');
+  const [cityText, setCityText] = React.useState<string>(value?.cityText || '');
 
   React.useEffect(() => {
     fetch('/api/locations/countries').then(r => r.json()).then(res => {
@@ -61,17 +63,31 @@ export default function LocationSelect({ value, onChange }: Props) {
   React.useEffect(() => {
     onChange?.({
       countryCode: countryCode || null,
-      stateCode: stateCode || null,
-      cityId: cityId === '' ? null : Number(cityId)
+      stateCode: countryCode === 'US' ? (stateCode || null) : null,
+      cityId: countryCode === 'US' ? (cityId === '' ? null : Number(cityId)) : null,
+      stateText: countryCode !== 'US' ? (stateText || null) : null,
+      cityText: countryCode !== 'US' ? (cityText || null) : (countryCode === 'US' ? (cityText || null) : null)
     });
-  }, [countryCode, stateCode, cityId]);
+  }, [countryCode, stateCode, cityId, stateText, cityText]);
 
   const onCountry = (e: SelectChangeEvent) => setCountryCode(e.target.value as string);
   const onState = (e: SelectChangeEvent) => setStateCode(e.target.value as string);
-  const onCity = (e: SelectChangeEvent) => setCityId(Number(e.target.value));
+  const onCity = (e: SelectChangeEvent) => {
+    setCityId(Number(e.target.value));
+    if (e.target.value) {
+      setCityText(''); // Clear text input when selecting from dropdown
+    }
+  };
+  const onStateText = (e: React.ChangeEvent<HTMLInputElement>) => setStateText(e.target.value);
+  const onCityText = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCityText(e.target.value);
+    if (e.target.value) {
+      setCityId(''); // Clear dropdown selection when typing
+    }
+  };
 
   return (
-    <Box display="flex" gap={2}>
+    <Box display="flex" gap={2} flexWrap="wrap">
       <FormControl size="small" sx={{ minWidth: 180 }}>
         <InputLabel id="country-label">Country</InputLabel>
         <Select labelId="country-label" label="Country" value={countryCode} onChange={onCountry}>
@@ -95,15 +111,46 @@ export default function LocationSelect({ value, onChange }: Props) {
       )}
 
       {countryCode === 'US' && stateCode && (
-        <FormControl size="small" sx={{ minWidth: 220 }}>
-          <InputLabel id="city-label">City</InputLabel>
-          <Select labelId="city-label" label="City" value={cityId === '' ? '' : String(cityId)} onChange={onCity}>
-            <MenuItem value="">None</MenuItem>
-            {cities.map(c => (
-              <MenuItem key={c.id} value={String(c.id)}>{c.city}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box display="flex" gap={1} alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id="city-label">City</InputLabel>
+            <Select labelId="city-label" label="City" value={cityId === '' ? '' : String(cityId)} onChange={onCity}>
+              <MenuItem value="">None</MenuItem>
+              {cities.map(c => (
+                <MenuItem key={c.id} value={String(c.id)}>{c.city}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            size="small"
+            label="Or type city"
+            value={cityText}
+            onChange={onCityText}
+            sx={{ minWidth: 180 }}
+            placeholder="Enter city name"
+          />
+        </Box>
+      )}
+
+      {countryCode && countryCode !== 'US' && (
+        <>
+          <TextField
+            size="small"
+            label="State/Province"
+            value={stateText}
+            onChange={onStateText}
+            sx={{ minWidth: 180 }}
+            placeholder="Enter state or province"
+          />
+          <TextField
+            size="small"
+            label="City"
+            value={cityText}
+            onChange={onCityText}
+            sx={{ minWidth: 180 }}
+            placeholder="Enter city name"
+          />
+        </>
       )}
     </Box>
   );

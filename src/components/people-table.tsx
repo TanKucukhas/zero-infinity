@@ -18,12 +18,14 @@ import {
   X,
   Sparkles,
   User,
-  TrendingUp
+  TrendingUp,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNotifications } from "@/contexts/notification-context";
 import { NoPeopleEmptyState, NoSearchResultsEmptyState, ErrorEmptyState } from "@/components/empty-state";
+import ContactForm from "@/components/ContactForm";
 
 type Person = {
   id: string;
@@ -31,19 +33,22 @@ type Person = {
   lastName: string;
   email: string;
   secondEmail: string;
-  phone?: string;
   company: string;
   website: string;
   linkedin: string;
   facebook: string;
   instagram: string;
+  imdb: string;
+  wikipedia: string;
   priority: string;
   assignedTo: string;
   contacted: boolean;
   location: string;
   fullName: string;
-  hemalNotes: string;
-  yetkinNotes: string;
+  seenFilm: boolean;
+  docBranchMember: boolean;
+  isActive: boolean;
+  createdAt: number;
 };
 
 type PaginationInfo = {
@@ -85,6 +90,8 @@ export default function PeopleTable() {
     hasPrev: false,
   });
   const [stats, setStats] = useState<Stats | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [editingContact, setEditingContact] = useState<Person | null>(null);
   
   const { addNotification } = useNotifications();
 
@@ -201,6 +208,56 @@ export default function PeopleTable() {
     }
   };
 
+  // Handle contact form
+  const handleAddContact = () => {
+    setEditingContact(null);
+    setShowContactForm(true);
+  };
+
+  const handleEditContact = (contact: Person) => {
+    setEditingContact(contact);
+    setShowContactForm(true);
+  };
+
+  const handleSaveContact = async (formData: any) => {
+    try {
+      if (editingContact) {
+        // Update existing contact
+        const response = await fetch(`/api/contacts/${editingContact.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update contact');
+        }
+      } else {
+        // Create new contact
+        const response = await fetch('/api/contacts/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contacts: [formData] })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create contact');
+        }
+      }
+      
+      // Refresh the table
+      await fetchPeople(pagination.page);
+      setShowContactForm(false);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleCloseContactForm = () => {
+    setShowContactForm(false);
+    setEditingContact(null);
+  };
+
   const activeFiltersCount = 
     (priorityFilter !== "all" ? 1 : 0) +
     (assignedFilter !== "all" ? 1 : 0) +
@@ -258,6 +315,10 @@ export default function PeopleTable() {
         </div>
         
         <div className="flex gap-2">
+          <Button variant="primary" size="sm" onClick={handleAddContact} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Contact
+          </Button>
           <Button variant="outline" size="sm" onClick={handleImport} className="gap-2">
             <Upload className="h-4 w-4" />
             Import CSV
@@ -414,19 +475,16 @@ export default function PeopleTable() {
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
               <tr>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Person
+                  Contact
                 </th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Company
                 </th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Contact
+                  Email
                 </th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Social
+                  Social Media
                 </th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Priority
@@ -438,7 +496,7 @@ export default function PeopleTable() {
                   Status
                 </th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  Notes
+                  Flags
                 </th>
                 <th className="px-4 py-2.5 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Actions
@@ -521,22 +579,16 @@ export default function PeopleTable() {
                     </td>
                     
                     <td className="px-4 py-1.5">
-                      <div className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[150px]" title={person.phone}>
-                        {person.phone || "-"}
-                      </div>
-                    </td>
-                    
-                    <td className="px-4 py-1.5">
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-1 flex-wrap">
                         {person.linkedin && person.linkedin !== "Search LinkedIn" && !person.linkedin.includes("Search") && (
                           <a 
                             href={person.linkedin} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 px-1 py-0.5 bg-blue-50 dark:bg-blue-950/20 rounded"
                             title="LinkedIn"
                           >
-                            Linkedin
+                            LI
                           </a>
                         )}
                         {person.facebook && !person.facebook.includes("Search") && (
@@ -544,7 +596,7 @@ export default function PeopleTable() {
                             href={person.facebook} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-700 hover:text-blue-800 dark:text-blue-500"
+                            className="text-xs text-blue-700 hover:text-blue-800 dark:text-blue-500 px-1 py-0.5 bg-blue-50 dark:bg-blue-950/20 rounded"
                             title="Facebook"
                           >
                             FB
@@ -555,10 +607,32 @@ export default function PeopleTable() {
                             href={person.instagram} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-xs text-pink-600 hover:text-pink-700 dark:text-pink-400"
+                            className="text-xs text-pink-600 hover:text-pink-700 dark:text-pink-400 px-1 py-0.5 bg-pink-50 dark:bg-pink-950/20 rounded"
                             title="Instagram"
                           >
                             IG
+                          </a>
+                        )}
+                        {person.imdb && (
+                          <a 
+                            href={person.imdb} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 px-1 py-0.5 bg-yellow-50 dark:bg-yellow-950/20 rounded"
+                            title="IMDB"
+                          >
+                            IMDB
+                          </a>
+                        )}
+                        {person.wikipedia && (
+                          <a 
+                            href={person.wikipedia} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-gray-600 hover:text-gray-700 dark:text-gray-400 px-1 py-0.5 bg-gray-50 dark:bg-gray-950/20 rounded"
+                            title="Wikipedia"
+                          >
+                            WIKI
                           </a>
                         )}
                       </div>
@@ -598,8 +672,22 @@ export default function PeopleTable() {
                     </td>
                     
                     <td className="px-4 py-1.5">
-                      <div className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[200px]" title={person.hemalNotes || person.yetkinNotes}>
-                        {person.hemalNotes || person.yetkinNotes || "-"}
+                      <div className="flex gap-1 flex-wrap">
+                        {person.seenFilm && (
+                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            Seen Film
+                          </span>
+                        )}
+                        {person.docBranchMember && (
+                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            Doc Branch
+                          </span>
+                        )}
+                        {!person.isActive && (
+                          <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                            Inactive
+                          </span>
+                        )}
                       </div>
                     </td>
                     
@@ -618,6 +706,7 @@ export default function PeopleTable() {
                           size="sm" 
                           className="h-7 w-7 p-0"
                           title="Edit"
+                          onClick={() => handleEditContact(person)}
                         >
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
@@ -684,6 +773,37 @@ export default function PeopleTable() {
           </div>
         </div>
       )}
+
+      {/* Contact Form Modal */}
+      <ContactForm
+        open={showContactForm}
+        onClose={handleCloseContactForm}
+        onSave={handleSaveContact}
+        initialData={editingContact ? {
+          firstName: editingContact.firstName,
+          lastName: editingContact.lastName,
+          emailPrimary: editingContact.email,
+          emailSecondary: editingContact.secondEmail,
+          company: editingContact.company,
+          website: editingContact.website,
+          linkedin: editingContact.linkedin,
+          facebook: editingContact.facebook,
+          instagram: editingContact.instagram,
+          imdb: editingContact.imdb,
+          wikipedia: editingContact.wikipedia,
+          priority: editingContact.priority as any,
+          seenFilm: editingContact.seenFilm,
+          docBranchMember: editingContact.docBranchMember,
+          location: {
+            countryCode: null,
+            stateCode: null,
+            cityId: null,
+            stateText: null,
+            cityText: null
+          }
+        } : undefined}
+        title={editingContact ? "Edit Contact" : "Add Contact"}
+      />
     </div>
   );
 }
