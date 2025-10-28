@@ -18,11 +18,11 @@ export default function HomePage() {
     // If user is logged in, go to contacts
     // If not logged in, go to login
     if (user) {
-      router.push("/contacts");
+      window.location.href = "/contacts";
     } else {
-      router.push("/login");
+      window.location.href = "/login";
     }
-  }, [router, user, isReady]);
+  }, [user, isReady])
 
   return (
     <div className="flex items-center justify-center h-screen">

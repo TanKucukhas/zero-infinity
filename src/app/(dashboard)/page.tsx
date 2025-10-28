@@ -15,8 +15,8 @@ export default function DashboardPage() {
     if (typeof window === 'undefined') return;
     if (!isReady) return;
     
-    router.push("/contacts");
-  }, [router, isReady]);
+    window.location.href = "/contacts";
+  }, [isReady])
 
   return (
     <div className="flex items-center justify-center h-screen">

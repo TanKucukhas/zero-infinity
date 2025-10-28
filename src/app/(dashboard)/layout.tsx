@@ -18,12 +18,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     if (!isReady) return;
 
     if (!user) {
-      router.replace('/login')
+      // Use window.location instead of router to prevent hydration issues
+      window.location.href = '/login';
       return;
     }
 
     setIsChecking(false)
-  }, [user, isReady, router])
+  }, [user, isReady])
 
   // Show loading while checking authentication
   if (isChecking || !isReady || !user) {

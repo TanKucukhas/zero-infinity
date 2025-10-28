@@ -51,7 +51,7 @@ export default function Login() {
       if (response.ok) {
         localStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);
-        router.replace("/contacts");
+        window.location.href = "/contacts";
       } else {
         setError(data.error || "Login failed");
       }
