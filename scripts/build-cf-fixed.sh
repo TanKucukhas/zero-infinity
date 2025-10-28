@@ -1,34 +1,45 @@
 #!/bin/bash
 
-# Cloudflare Pages build script with workaround for missing manifest file
+# Cloudflare Pages build script with proper OpenNext configuration
 
 echo "🔧 Starting Cloudflare build..."
 
 # Clean previous builds
 rm -rf .next .open-next
 
-# Run Next.js build
-npm run build
+# Run OpenNext Cloudflare build (this handles Next.js build internally)
+echo "☁️  Building for Cloudflare with OpenNext..."
+npx opennextjs-cloudflare build
 
-# Create missing manifest files if they don't exist
-MANIFEST_DIR=".next/standalone/.next/server/app/(dashboard)"
-MANIFEST_FILE="$MANIFEST_DIR/page_client-reference-manifest.js"
-PAGES_MANIFEST_FILE=".next/standalone/.next/server/pages-manifest.json"
-
-if [ ! -f "$MANIFEST_FILE" ]; then
-  echo "⚠️  Creating missing page manifest file..."
-  mkdir -p "$MANIFEST_DIR"
-  echo '{}' > "$MANIFEST_FILE"
+# Ensure the assets directory exists and has proper structure
+if [ ! -d ".open-next/assets" ]; then
+  echo "❌ Assets directory not found!"
+  exit 1
 fi
 
-if [ ! -f "$PAGES_MANIFEST_FILE" ]; then
-  echo "⚠️  Creating missing pages manifest file..."
-  mkdir -p "$(dirname "$PAGES_MANIFEST_FILE")"
-  echo '{}' > "$PAGES_MANIFEST_FILE"
+# Create a simple index.html if it doesn't exist (fallback)
+if [ ! -f ".open-next/assets/index.html" ]; then
+  echo "📄 Creating fallback index.html..."
+  cat > ".open-next/assets/index.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zero Infinity</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <div id="__next"></div>
+    <script>
+        // Redirect to contacts page
+        window.location.href = '/contacts';
+    </script>
+</body>
+</html>
+EOF
 fi
-
-# Run OpenNext Cloudflare build (skip Next.js build since we already did it)
-npx opennextjs-cloudflare build --skipBuild
 
 echo "✅ Build complete!"
+echo "📁 Assets directory: .open-next/assets"
+echo "🚀 Ready for Cloudflare Pages deployment"
 

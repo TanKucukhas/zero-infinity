@@ -8,11 +8,19 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
-      if (isOnDashboard) {
+      const isOnContacts = nextUrl.pathname.startsWith("/contacts");
+      const isOnCompanies = nextUrl.pathname.startsWith("/companies");
+      const isOnUsers = nextUrl.pathname.startsWith("/users");
+      const isOnSettings = nextUrl.pathname.startsWith("/settings");
+      const isOnAccountSettings = nextUrl.pathname.startsWith("/account-settings");
+      
+      const isProtectedRoute = isOnDashboard || isOnContacts || isOnCompanies || isOnUsers || isOnSettings || isOnAccountSettings;
+      
+      if (isProtectedRoute) {
         if (isLoggedIn) return true;
         return false; // Redirect unauthenticated users to login page
-      } else if (isLoggedIn) {
-        return Response.redirect(new URL("/dashboard", nextUrl));
+      } else if (isLoggedIn && (nextUrl.pathname === "/" || nextUrl.pathname === "/login")) {
+        return Response.redirect(new URL("/contacts", nextUrl));
       }
       return true;
     },
