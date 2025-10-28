@@ -939,7 +939,8 @@ export default function PeopleTable() {
             name: editingContact.assignedTo.split(' ')[0] || '',
             lastName: editingContact.assignedTo.split(' ').slice(1).join(' ') || '',
             email: '',
-            role: 'viewer'
+            role: 'viewer',
+            status: 'active' as const
           }] : [],
           assignedUserIds: editingContact.assignedTo ? [0] : []
         } : undefined}

@@ -29,7 +29,7 @@ export async function GET() {
     if (!('DB' in env)) {
       return NextResponse.json({ ok: false, source, error: 'D1 binding missing' }, { status: 500 });
     }
-    await env.DB.prepare('SELECT 1 as test').first();
+    await (env.DB as any).prepare('SELECT 1 as test').first();
     return NextResponse.json({ ok: true, source, message: 'D1 reachable' });
     
   } catch (error) {

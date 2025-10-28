@@ -1,7 +1,7 @@
 import { getCloudflareContext } from "@/server/cloudflare";
 import { getDb } from "@/server/db";
 import { companies, countries, states, cities } from "@/server/db/schema";
-import { eq, like, sql, desc } from "drizzle-orm";
+import { eq, like, desc } from "drizzle-orm";
 
 // Force dynamic rendering for Cloudflare Pages
 export const dynamic = 'force-dynamic';
@@ -23,64 +23,37 @@ export async function GET(req: Request) {
       whereConditions.push(like(companies.name, `%${search}%`));
     }
 
-    // Count total
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(companies)
-      .where(whereConditions.length > 0 ? sql`${whereConditions.join(' AND ')}` : undefined);
-
-    const total = countResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const offset = (page - 1) * limit;
-
     // Get companies with location data
     const rows = await db
-      .select({
-        id: companies.id,
-        name: companies.name,
-        website: companies.website,
-        linkedinUrl: companies.linkedinUrl,
-        industry: companies.industry,
-        size: companies.size,
-        description: companies.description,
-        logoUrl: companies.logoUrl,
-        headquartersCountry: companies.headquartersCountry,
-        headquartersState: companies.headquartersState,
-        headquartersCity: companies.headquartersCity,
-        createdAt: companies.createdAt,
-        updatedAt: companies.updatedAt,
-        headquartersCountryName: countries.name,
-        headquartersStateName: states.name,
-        headquartersCityName: cities.city,
-      })
+      .select()
       .from(companies)
       .leftJoin(countries, eq(countries.code, companies.headquartersCountry))
       .leftJoin(states, eq(states.code, companies.headquartersState))
       .leftJoin(cities, eq(cities.id, companies.headquartersCity))
-      .where(whereConditions.length > 0 ? sql`${whereConditions.join(' AND ')}` : undefined)
+      .where(whereConditions.length > 0 ? whereConditions[0] : undefined)
       .orderBy(companies.name)
       .limit(limit)
-      .offset(offset);
+      .offset((page - 1) * limit);
 
     const data = rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      website: r.website || '',
-      linkedinUrl: r.linkedinUrl || '',
-      industry: r.industry || '',
-      size: r.size || '',
-      description: r.description || '',
-      logoUrl: r.logoUrl || '',
+      id: r.companies.id,
+      name: r.companies.name,
+      website: r.companies.website || '',
+      linkedinUrl: r.companies.linkedinUrl || '',
+      industry: r.companies.industry || '',
+      size: r.companies.size || '',
+      description: r.companies.description || '',
+      logoUrl: r.companies.logoUrl || '',
       headquarters: {
-        countryCode: r.headquartersCountry,
-        stateCode: r.headquartersState,
-        cityId: r.headquartersCity,
-        countryName: r.headquartersCountryName,
-        stateName: r.headquartersStateName,
-        cityName: r.headquartersCityName
+        countryCode: r.companies.headquartersCountry,
+        stateCode: r.companies.headquartersState,
+        cityId: r.companies.headquartersCity,
+        countryName: r.countries?.name,
+        stateName: r.states?.name,
+        cityName: r.cities?.city
       },
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt
+      createdAt: r.companies.createdAt,
+      updatedAt: r.companies.updatedAt
     }));
 
     return Response.json({
@@ -89,9 +62,9 @@ export async function GET(req: Request) {
       pagination: {
         page,
         limit,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
+        total: data.length,
+        totalPages: Math.ceil(data.length / limit) || 1,
+        hasNext: page < Math.ceil(data.length / limit),
         hasPrev: page > 1
       }
     });
@@ -125,7 +98,7 @@ export async function POST(req: Request) {
 
     // Check for duplicate name
     const existingCompany = await db
-      .select({ id: companies.id })
+      .select()
       .from(companies)
       .where(eq(companies.name, name.trim()))
       .limit(1);

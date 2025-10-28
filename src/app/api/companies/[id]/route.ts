@@ -15,24 +15,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     const companyRow = await db
-      .select({
-        id: companies.id,
-        name: companies.name,
-        website: companies.website,
-        linkedinUrl: companies.linkedinUrl,
-        industry: companies.industry,
-        size: companies.size,
-        description: companies.description,
-        logoUrl: companies.logoUrl,
-        headquartersCountry: companies.headquartersCountry,
-        headquartersState: companies.headquartersState,
-        headquartersCity: companies.headquartersCity,
-        createdAt: companies.createdAt,
-        updatedAt: companies.updatedAt,
-        headquartersCountryName: countries.name,
-        headquartersStateName: states.name,
-        headquartersCityName: cities.city,
-      })
+      .select()
       .from(companies)
       .leftJoin(countries, eq(countries.code, companies.headquartersCountry))
       .leftJoin(states, eq(states.code, companies.headquartersState))
@@ -45,24 +28,24 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     const company = {
-      id: companyRow[0].id,
-      name: companyRow[0].name,
-      website: companyRow[0].website || '',
-      linkedinUrl: companyRow[0].linkedinUrl || '',
-      industry: companyRow[0].industry || '',
-      size: companyRow[0].size || '',
-      description: companyRow[0].description || '',
-      logoUrl: companyRow[0].logoUrl || '',
+      id: companyRow[0].companies.id,
+      name: companyRow[0].companies.name,
+      website: companyRow[0].companies.website || '',
+      linkedinUrl: companyRow[0].companies.linkedinUrl || '',
+      industry: companyRow[0].companies.industry || '',
+      size: companyRow[0].companies.size || '',
+      description: companyRow[0].companies.description || '',
+      logoUrl: companyRow[0].companies.logoUrl || '',
       headquarters: {
-        countryCode: companyRow[0].headquartersCountry,
-        stateCode: companyRow[0].headquartersState,
-        cityId: companyRow[0].headquartersCity,
-        countryName: companyRow[0].headquartersCountryName,
-        stateName: companyRow[0].headquartersStateName,
-        cityName: companyRow[0].headquartersCityName
+        countryCode: companyRow[0].companies.headquartersCountry,
+        stateCode: companyRow[0].companies.headquartersState,
+        cityId: companyRow[0].companies.headquartersCity,
+        countryName: companyRow[0].countries?.name,
+        stateName: companyRow[0].states?.name,
+        cityName: companyRow[0].cities?.city
       },
-      createdAt: companyRow[0].createdAt,
-      updatedAt: companyRow[0].updatedAt
+      createdAt: companyRow[0].companies.createdAt,
+      updatedAt: companyRow[0].companies.updatedAt
     };
 
     return Response.json({ success: true, data: company });
@@ -97,7 +80,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     // Check if company exists
     const existingCompany = await db
-      .select({ id: companies.id })
+      .select()
       .from(companies)
       .where(eq(companies.id, companyId))
       .limit(1);
@@ -109,7 +92,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     // If name is being updated, check for duplicates
     if (name && name.trim() !== '') {
       const duplicateCompany = await db
-        .select({ id: companies.id })
+        .select()
         .from(companies)
         .where(eq(companies.name, name.trim()))
         .limit(1);
@@ -153,24 +136,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     // Get updated company with location data
     const companyRow = await db
-      .select({
-        id: companies.id,
-        name: companies.name,
-        website: companies.website,
-        linkedinUrl: companies.linkedinUrl,
-        industry: companies.industry,
-        size: companies.size,
-        description: companies.description,
-        logoUrl: companies.logoUrl,
-        headquartersCountry: companies.headquartersCountry,
-        headquartersState: companies.headquartersState,
-        headquartersCity: companies.headquartersCity,
-        createdAt: companies.createdAt,
-        updatedAt: companies.updatedAt,
-        headquartersCountryName: countries.name,
-        headquartersStateName: states.name,
-        headquartersCityName: cities.city,
-      })
+      .select()
       .from(companies)
       .leftJoin(countries, eq(countries.code, companies.headquartersCountry))
       .leftJoin(states, eq(states.code, companies.headquartersState))
@@ -179,24 +145,24 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       .limit(1);
 
     const company = {
-      id: companyRow[0].id,
-      name: companyRow[0].name,
-      website: companyRow[0].website || '',
-      linkedinUrl: companyRow[0].linkedinUrl || '',
-      industry: companyRow[0].industry || '',
-      size: companyRow[0].size || '',
-      description: companyRow[0].description || '',
-      logoUrl: companyRow[0].logoUrl || '',
+      id: companyRow[0].companies.id,
+      name: companyRow[0].companies.name,
+      website: companyRow[0].companies.website || '',
+      linkedinUrl: companyRow[0].companies.linkedinUrl || '',
+      industry: companyRow[0].companies.industry || '',
+      size: companyRow[0].companies.size || '',
+      description: companyRow[0].companies.description || '',
+      logoUrl: companyRow[0].companies.logoUrl || '',
       headquarters: {
-        countryCode: companyRow[0].headquartersCountry,
-        stateCode: companyRow[0].headquartersState,
-        cityId: companyRow[0].headquartersCity,
-        countryName: companyRow[0].headquartersCountryName,
-        stateName: companyRow[0].headquartersStateName,
-        cityName: companyRow[0].headquartersCityName
+        countryCode: companyRow[0].companies.headquartersCountry,
+        stateCode: companyRow[0].companies.headquartersState,
+        cityId: companyRow[0].companies.headquartersCity,
+        countryName: companyRow[0].countries?.name,
+        stateName: companyRow[0].states?.name,
+        cityName: companyRow[0].cities?.city
       },
-      createdAt: companyRow[0].createdAt,
-      updatedAt: companyRow[0].updatedAt
+      createdAt: companyRow[0].companies.createdAt,
+      updatedAt: companyRow[0].companies.updatedAt
     };
 
     return Response.json({ 
@@ -223,11 +189,11 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     // Check if any contacts reference this company
     const contactCount = await db
-      .select({ count: sql<number>`count(*)` })
+      .select()
       .from(contacts)
       .where(eq(contacts.companyId, companyId));
 
-    if (contactCount[0]?.count > 0) {
+    if (contactCount.length > 0) {
       return Response.json({ 
         success: false, 
         error: "Cannot delete company: it is referenced by contacts" 

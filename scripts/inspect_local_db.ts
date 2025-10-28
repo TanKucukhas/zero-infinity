@@ -8,9 +8,9 @@ function inspectLocalDatabase() {
     const sqlitePath = process.env.DEV_SQLITE_PATH || "./.data/dev.sqlite";
     const db = new Database(sqlitePath);
 
-    const tables: Array<{ name: string }> = db
+    const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
-      .all();
+      .all() as Array<{ name: string }>;
 
     // Counts
     console.log("📊 Database Statistics:");
