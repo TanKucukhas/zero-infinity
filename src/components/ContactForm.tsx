@@ -56,8 +56,9 @@ type ContactFormData = {
   seenFilm: boolean;
   docBranchMember: boolean;
   location: LocationValue;
-  assignedToUserId?: number;
-  assignedToUser?: UserOption; // Full user data for assignment
+  // Multi-assignment fields
+  assignedUserIds: number[]; // Array of user IDs
+  assignedUsers: UserOption[]; // Full user data for assignments
   // Relationship fields
   hasRelationship: boolean;
   relationshipType?: string;
@@ -114,8 +115,8 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
       stateText: null,
       cityText: null
     },
-    assignedToUserId: undefined,
-    assignedToUser: undefined,
+    assignedUserIds: [],
+    assignedUsers: [],
     // Relationship defaults
     hasRelationship: false,
     relationshipType: 'custom',
@@ -131,7 +132,15 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
 
   React.useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({ ...prev, ...initialData }));
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        // Ensure location is properly set
+        location: initialData.location || prev.location,
+        // Load existing assignments
+        assignedUserIds: initialData.assignedUserIds || [],
+        assignedUsers: initialData.assignedUsers || []
+      }));
     }
   }, [initialData]);
 
@@ -743,26 +752,71 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
                 <div className="bg-white rounded-lg border border-zinc-200 p-4">
                   <h4 className="font-medium text-zinc-800 mb-2">Assignment Status</h4>
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${formData.assignedToUser ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <div className={`w-3 h-3 rounded-full ${formData.assignedUsers.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                     <span className="text-sm text-zinc-600">
-                      {formData.assignedToUser ? 'Contact is assigned' : 'Contact is unassigned'}
+                      {formData.assignedUsers.length > 0 
+                        ? `Contact is assigned to ${formData.assignedUsers.length} user${formData.assignedUsers.length > 1 ? 's' : ''}` 
+                        : 'Contact is unassigned'
+                      }
                     </span>
                   </div>
                 </div>
 
+                {/* Current Assignments */}
+                {formData.assignedUsers.length > 0 && (
+                  <div className="bg-white rounded-lg border border-zinc-200 p-4">
+                    <h4 className="font-medium text-zinc-800 mb-3">Current Assignments</h4>
+                    <div className="space-y-2">
+                      {formData.assignedUsers.map((user) => (
+                        <div key={user.id} className="flex items-center justify-between bg-zinc-50 rounded-lg p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <User size={16} className="text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-zinc-800">{`${user.name} ${user.lastName || ''}`.trim()}</div>
+                              <div className="text-sm text-zinc-500">{user.email}</div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                assignedUsers: prev.assignedUsers.filter(u => u.id !== user.id),
+                                assignedUserIds: prev.assignedUserIds.filter(id => id !== user.id)
+                              }));
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add New Assignment */}
                 <div className="space-y-2">
                   <UserAutocomplete
-                    value={formData.assignedToUser || null}
-                    onChange={(user) => setFormData(prev => ({ 
-                      ...prev, 
-                      assignedToUserId: user?.id,
-                      assignedToUser: user || undefined
-                    }))}
-                    label="Assign to"
+                    value={null}
+                    onChange={(user) => {
+                      if (user && !formData.assignedUsers.find(u => u.id === user.id)) {
+                        setFormData(prev => ({
+                          ...prev,
+                          assignedUsers: [...prev.assignedUsers, user],
+                          assignedUserIds: [...prev.assignedUserIds, user.id]
+                        }));
+                      }
+                    }}
+                    label="Add Assignment"
                     placeholder="Type to search users..."
                     minSearchLength={1}
                   />
-                  <p className="text-xs text-zinc-500">Assign this contact to a system user for management and follow-up</p>
+                  <p className="text-xs text-zinc-500">Add users to assign this contact to multiple team members</p>
                 </div>
               </div>
             </div>

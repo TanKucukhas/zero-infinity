@@ -130,7 +130,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       docBranchMember,
       location,
       isActive,
-      inactiveReason
+      inactiveReason,
+      assignedUserIds
     } = body;
 
     // Validate priority
@@ -184,6 +185,22 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     if (result.changes === 0) {
       return Response.json({ success: false, error: "Contact not found" }, { status: 404 });
+    }
+
+    // Update assignments if provided
+    if (Array.isArray(assignedUserIds)) {
+      // Remove existing assignments
+      await env.DB.prepare(`
+        DELETE FROM contact_assignments WHERE contact_id = ?
+      `).bind(contactId).run();
+
+      // Add new assignments
+      for (const userId of assignedUserIds) {
+        await env.DB.prepare(`
+          INSERT INTO contact_assignments (contact_id, user_id)
+          VALUES (?, ?)
+        `).bind(contactId, userId).run();
+      }
     }
 
     // Log the update in contact_history
