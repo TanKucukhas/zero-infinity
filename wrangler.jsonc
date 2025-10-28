@@ -19,7 +19,7 @@
 		"enabled": true
 	},
 	"d1_databases": [
-		{ "binding": "DB", "database_name": "people_intel", "database_id": "86778354-cfd2-4820-9973-450d86a1f438" }
+		{ "binding": "DB", "database_name": "zero-infinity-db", "database_id": "af9d1ecedd49a7572d1302103e938b01" }
 	],
 	"routes": [
 		{ "pattern": "app.zeroinfinity.ai/*", "zone_name": "zeroinfinity.ai" }
