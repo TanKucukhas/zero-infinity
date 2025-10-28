@@ -17,17 +17,27 @@ export async function GET(req: Request) {
         data: [
           {
             id: "1",
-            firstName: "John",
-            lastName: "Doe",
-            email: "john.doe@example.com",
-            secondEmail: "",
+            firstName: "Alice",
+            lastName: "Johnson",
+            emailPrimary: "alice.johnson@techcorp.com",
+            emailSecondary: "",
+            phoneNumber: "+1-555-0101",
+            linkedin: "https://linkedin.com/in/alicejohnson",
+            priority: "HIGH",
+            seenFilm: true,
+            docBranchMember: false,
+            biography: "Senior software engineer with 8 years of experience",
+            isActive: true,
+            inactiveReason: null,
+            inactiveAt: null,
+            createdAt: new Date(),
             company: {
               id: 1,
-              name: "Example Corp",
-              website: "https://example.com",
+              name: "TechCorp Inc",
+              website: "https://techcorp.com",
               industry: "Technology",
               size: "50-200",
-              description: "A technology company",
+              description: "Leading technology company",
               logoUrl: null,
               headquarters: {
                 countryCode: "US",
@@ -40,43 +50,40 @@ export async function GET(req: Request) {
               createdAt: new Date(),
               updatedAt: new Date()
             },
-            linkedin: "https://linkedin.com/in/johndoe",
-            facebook: "",
-            instagram: "",
-            imdb: "",
-            wikipedia: "",
-            priority: "MEDIUM",
-            assignedTo: "",
-            contacted: false,
-            location: "San Francisco, CA",
-            fullName: "John Doe",
-            seenFilm: false,
-            docBranchMember: false,
-            biography: "Software engineer with 5 years of experience",
-            phoneNumber: "+1234567890",
-            isActive: true,
-            inactiveReason: null,
-            inactiveAt: null,
-            createdAt: new Date()
+            assignedTo: {
+              id: 2,
+              name: "John Doe"
+            },
+            location: "San Francisco, CA"
           },
           {
             id: "2",
-            firstName: "Jane",
-            lastName: "Smith",
-            email: "jane.smith@example.com",
-            secondEmail: "",
+            firstName: "Bob",
+            lastName: "Wilson",
+            emailPrimary: "bob.wilson@innovationlabs.com",
+            emailSecondary: "",
+            phoneNumber: "+1-555-0102",
+            linkedin: "https://linkedin.com/in/bobwilson",
+            priority: "MEDIUM",
+            seenFilm: false,
+            docBranchMember: true,
+            biography: "Product manager specializing in agile methodologies",
+            isActive: true,
+            inactiveReason: null,
+            inactiveAt: null,
+            createdAt: new Date(),
             company: {
               id: 2,
-              name: "Tech Solutions Inc",
-              website: "https://techsolutions.com",
+              name: "Innovation Labs",
+              website: "https://innovationlabs.com",
               industry: "Software",
               size: "10-50",
-              description: "Software development company",
+              description: "Software development and consulting",
               logoUrl: null,
               headquarters: {
                 countryCode: "US",
                 stateCode: "NY",
-                cityId: 2,
+                cityId: 3,
                 countryName: "United States",
                 stateName: "New York",
                 cityName: "New York"
@@ -84,30 +91,78 @@ export async function GET(req: Request) {
               createdAt: new Date(),
               updatedAt: new Date()
             },
-            linkedin: "https://linkedin.com/in/janesmith",
-            facebook: "",
-            instagram: "",
-            imdb: "",
-            wikipedia: "",
-            priority: "HIGH",
-            assignedTo: "",
-            contacted: true,
-            location: "New York, NY",
-            fullName: "Jane Smith",
+            assignedTo: {
+              id: 3,
+              name: "Jane Smith"
+            },
+            location: "New York, NY"
+          },
+          {
+            id: "3",
+            firstName: "Carol",
+            lastName: "Davis",
+            emailPrimary: "carol.davis@globalsolutions.ca",
+            emailSecondary: "",
+            phoneNumber: "+1-555-0103",
+            linkedin: "https://linkedin.com/in/caroldavis",
+            priority: "LOW",
             seenFilm: true,
             docBranchMember: true,
-            biography: "Product manager with expertise in agile methodologies",
-            phoneNumber: "+1987654321",
+            biography: "Business analyst with expertise in data visualization",
             isActive: true,
             inactiveReason: null,
             inactiveAt: null,
-            createdAt: new Date()
+            createdAt: new Date(),
+            company: {
+              id: 3,
+              name: "Global Solutions",
+              website: "https://globalsolutions.ca",
+              industry: "Consulting",
+              size: "200+",
+              description: "International consulting firm",
+              logoUrl: null,
+              headquarters: {
+                countryCode: "CA",
+                stateCode: "ON",
+                cityId: 4,
+                countryName: "Canada",
+                stateName: "Ontario",
+                cityName: "Toronto"
+              },
+              createdAt: new Date(),
+              updatedAt: new Date()
+            },
+            assignedTo: {
+              id: 1,
+              name: "Admin User"
+            },
+            location: "Toronto, ON"
+          },
+          {
+            id: "4",
+            firstName: "David",
+            lastName: "Brown",
+            emailPrimary: "david.brown@freelance.com",
+            emailSecondary: "",
+            phoneNumber: "+1-555-0104",
+            linkedin: "https://linkedin.com/in/davidbrown",
+            priority: "NONE",
+            seenFilm: false,
+            docBranchMember: false,
+            biography: "Freelance consultant and entrepreneur",
+            isActive: true,
+            inactiveReason: null,
+            inactiveAt: null,
+            createdAt: new Date(),
+            company: null,
+            assignedTo: null,
+            location: "Texas, US"
           }
         ],
         pagination: {
           page: 1,
           limit: 20,
-          total: 2,
+          total: 4,
           totalPages: 1,
           hasNext: false,
           hasPrev: false
@@ -167,9 +222,13 @@ export async function GET(req: Request) {
         companyName: companies.name,
         companyWebsite: companies.website,
         companyIndustry: companies.industry,
+        assignedTo: contacts.assignedTo,
+        assignedToName: users.name,
+        assignedToLastName: users.lastName,
       })
       .from(contacts)
       .leftJoin(companies, eq(companies.id, contacts.companyId))
+      .leftJoin(users, eq(users.id, contacts.assignedTo))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(desc(contacts.createdAt))
       .limit(limit)
@@ -197,7 +256,10 @@ export async function GET(req: Request) {
         website: r.companyWebsite,
         industry: r.companyIndustry
       } : null,
-      assignedTo: null
+      assignedTo: r.assignedTo ? {
+        id: r.assignedTo,
+        name: `${r.assignedToName} ${r.assignedToLastName}`.trim()
+      } : null
     }));
 
     return Response.json({
@@ -222,6 +284,37 @@ export async function GET(req: Request) {
 // POST /api/contacts - Create new contact
 export async function POST(req: Request) {
   try {
+    // For development, return mock response
+    if (process.env.NODE_ENV === 'development') {
+      const body = await req.json();
+      const { firstName, lastName, emailPrimary } = body;
+      
+      if (!firstName || !lastName || !emailPrimary) {
+        return Response.json({ 
+          success: false, 
+          error: "First name, last name, and primary email are required" 
+        }, { status: 400 });
+      }
+      
+      return Response.json({ 
+        success: true, 
+        data: {
+          id: Math.floor(Math.random() * 1000) + 100,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          emailPrimary: emailPrimary.trim(),
+          emailSecondary: body.emailSecondary?.trim() || null,
+          phoneNumber: body.phonePrimary?.trim() || null,
+          linkedin: body.linkedinUrl?.trim() || null,
+          priority: body.priority || 'NONE',
+          isActive: body.status !== 'INACTIVE',
+          companyId: body.companyId || null,
+          createdAt: new Date()
+        }, 
+        message: "Contact created successfully (mock response)" 
+      });
+    }
+    
     const { env } = await getCloudflareContext();
     const db = getDb(env);
     const body = await req.json();

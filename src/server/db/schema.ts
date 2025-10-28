@@ -112,6 +112,7 @@ export const contacts = sqliteTable("contacts", {
   inactiveAt: integer("inactive_at", { mode: "timestamp_ms" }),
 
   createdByUserId: integer("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull()
 }, (table) => ({
   idx_name: uniqueIndex("u_contacts_name_email").on(table.firstName, table.lastName, table.emailPrimary)

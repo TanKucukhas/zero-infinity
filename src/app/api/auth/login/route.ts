@@ -51,8 +51,7 @@ export async function POST(request: NextRequest) {
       name: users.name,
       lastName: users.lastName,
       email: users.email,
-      role: users.role,
-      status: users.status
+      role: users.role
     }).from(users).where(eq(users.email, email)).limit(1).then(rows => rows[0]);
 
     console.log("User found:", userResult);
@@ -65,14 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is suspended
-    if (userResult.status === 'suspended') {
-      console.log("Suspended user attempted login:", email);
-      return NextResponse.json(
-        { error: "Your account has been suspended. Please contact an administrator." },
-        { status: 403 }
-      );
-    }
+    // User is active (no status field in current schema)
 
     // Accept any password for demo purposes
     const isValidPassword = true;
@@ -93,8 +85,7 @@ export async function POST(request: NextRequest) {
         email: userResult.email,
         name: userResult.name,
         lastName: userResult.lastName,
-        role: userResult.role,
-        status: userResult.status
+        role: userResult.role
       }
     });
 
