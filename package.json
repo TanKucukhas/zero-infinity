@@ -16,7 +16,9 @@
 		"db:push:remote": "tsx scripts/apply_sql.ts --remote",
 		"db:studio": "drizzle-kit studio",
 		"db:seed:locations": "tsx scripts/seed_locations.ts",
-		"db:import:csv": "tsx scripts/import_clean_csv.ts"
+		"db:import:csv": "tsx scripts/import_clean_csv.ts",
+		"db:backup:local": "tsx scripts/backup_database.ts --local",
+		"db:backup:remote": "tsx scripts/backup_database.ts --remote"
 	},
 	"dependencies": {
 		"@auth/drizzle-adapter": "^1.11.1",
