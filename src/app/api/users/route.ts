@@ -3,6 +3,9 @@ import { getDb } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { sql } from "drizzle-orm";
 
+// Force dynamic rendering for Cloudflare Pages
+export const dynamic = 'force-dynamic';
+
 // GET /api/users
 export async function GET(req: Request) {
   try {

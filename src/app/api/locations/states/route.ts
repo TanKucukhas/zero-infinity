@@ -3,6 +3,9 @@ import { getDb } from "@/server/db";
 import { states } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 
+// Force dynamic rendering for Cloudflare Pages
+export const dynamic = 'force-dynamic';
+
 // GET /api/locations/states?country=US
 export async function GET(req: Request) {
   try {

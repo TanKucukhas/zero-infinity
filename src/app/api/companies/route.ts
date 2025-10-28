@@ -3,6 +3,9 @@ import { getDb } from "@/server/db";
 import { companies, countries, states, cities } from "@/server/db/schema";
 import { eq, like, sql, desc } from "drizzle-orm";
 
+// Force dynamic rendering for Cloudflare Pages
+export const dynamic = 'force-dynamic';
+
 // GET /api/companies
 // Supports: search (for autocomplete), page, limit
 export async function GET(req: Request) {

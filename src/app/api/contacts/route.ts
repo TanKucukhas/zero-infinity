@@ -3,6 +3,9 @@ import { getDb } from "@/server/db";
 import { contacts, companies, users } from "@/server/db/schema";
 import { eq, like, sql, desc, and } from "drizzle-orm";
 
+// Force dynamic rendering for Cloudflare Pages
+export const dynamic = 'force-dynamic';
+
 // GET /api/contacts
 // Supports: page, limit, search, priority
 export async function GET(req: Request) {
