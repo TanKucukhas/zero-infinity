@@ -1,6 +1,6 @@
 "use client";
 import { Eye, EyeOff, Moon, Sun } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
@@ -14,7 +14,29 @@ export default function Login() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { setUser } = useUser();
+  const { setUser, user, isReady } = useUser();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!isReady) return;
+    
+    if (user) {
+      router.replace("/contacts");
+    }
+  }, [user, isReady, router]);
+
+  // Show loading while checking auth status
+  if (!isReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-zinc-950">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
