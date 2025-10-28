@@ -1,7 +1,7 @@
 "use client";
 import { useTheme } from "@/hooks/use-theme";
 import { useUser } from "@/contexts/user-context";
-import { Moon, Sun, LogOut, Settings, User, Users, Search, Bell, UserCog, Shield } from "lucide-react";
+import { Moon, Sun, LogOut, Settings, User, Users, Search, Bell, UserCog, Shield, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -18,6 +18,7 @@ export default function Navbar() {
 
   const menuItems = [
     { href: "/contacts", label: "Contacts", icon: Users },
+    { href: "/companies", label: "Companies", icon: Building2 },
   ];
 
   const handleGlobalSearch = (e: React.FormEvent) => {

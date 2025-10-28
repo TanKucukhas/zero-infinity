@@ -1,10 +1,6 @@
 "use client";
 import * as React from 'react';
 import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
   Button, 
   TextField, 
   FormControl, 
@@ -22,6 +18,7 @@ import {
   Step,
   StepLabel
 } from '@mui/material';
+import Modal from '@/components/ui/modal';
 import { 
   LinkedinLogo, 
   FacebookLogo, 
@@ -36,6 +33,7 @@ import {
   Play
 } from 'phosphor-react';
 import LocationSelect, { LocationValue } from '@/components/locations/LocationSelect';
+import CompanySelect, { Company } from '@/components/companies/CompanySelect';
 import { useNotifications } from '@/contexts/notification-context';
 
 type ContactFormData = {
@@ -44,9 +42,7 @@ type ContactFormData = {
   emailPrimary: string;
   emailSecondary: string;
   phoneNumber: string;
-  company: string;
-  website: string;
-  companyLinkedin: string;
+  company: Company | null;
   imdb: string;
   facebook: string;
   instagram: string;
@@ -88,9 +84,7 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
     emailPrimary: '',
     emailSecondary: '',
     phoneNumber: '',
-    company: '',
-    website: '',
-    companyLinkedin: '',
+    company: null,
     imdb: '',
     facebook: '',
     instagram: '',
@@ -262,19 +256,6 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <Globe size={16} className="text-green-600" />
-                  Website
-                </label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={handleChange('website')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200 bg-white"
-                  placeholder="https://personal-website.com"
-                />
-              </div>
             </div>
             
             <div className="space-y-2">
@@ -300,48 +281,71 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
               <p className="text-zinc-600">Add company details and professional information</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
                   <Buildings size={16} className="text-purple-600" />
-                  Company Name
+                  Company
                 </label>
-                <input
-                  type="text"
+                <CompanySelect
                   value={formData.company}
-                  onChange={handleChange('company')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="Enter company name"
+                  onChange={(company) => setFormData(prev => ({ ...prev, company }))}
+                  placeholder="Search for a company..."
                 />
               </div>
               
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <Globe size={16} className="text-green-600" />
-                  Company Website
-                </label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={handleChange('website')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://company.com"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <LinkedinLogo size={16} className="text-blue-600" />
-                  Company LinkedIn
-                </label>
-                <input
-                  type="url"
-                  value={formData.companyLinkedin}
-                  onChange={handleChange('companyLinkedin')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://linkedin.com/company/company-name"
-                />
-              </div>
+              {formData.company && (
+                <div className="bg-zinc-50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-zinc-800 flex items-center gap-2">
+                    <Buildings size={16} className="text-brand-600" />
+                    Selected Company
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-zinc-600">Name:</span>
+                      <span className="ml-2 text-zinc-800">{formData.company.name}</span>
+                    </div>
+                    {formData.company.website && (
+                      <div>
+                        <span className="font-medium text-zinc-600">Website:</span>
+                        <a 
+                          href={formData.company.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:underline"
+                        >
+                          {formData.company.website}
+                        </a>
+                      </div>
+                    )}
+                    {formData.company.linkedinUrl && (
+                      <div>
+                        <span className="font-medium text-zinc-600">LinkedIn:</span>
+                        <a 
+                          href={formData.company.linkedinUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:underline"
+                        >
+                          View Profile
+                        </a>
+                      </div>
+                    )}
+                    {formData.company.industry && (
+                      <div>
+                        <span className="font-medium text-zinc-600">Industry:</span>
+                        <span className="ml-2 text-zinc-800">{formData.company.industry}</span>
+                      </div>
+                    )}
+                    {formData.company.size && (
+                      <div>
+                        <span className="font-medium text-zinc-600">Size:</span>
+                        <span className="ml-2 text-zinc-800">{formData.company.size} employees</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -549,7 +553,7 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
+    <Modal isOpen={open} onClose={handleClose} className="max-w-4xl">
       <div className="bg-white rounded-lg">
         {/* Header */}
         <div className="bg-gradient-to-r from-brand-600 to-brand-700 text-white p-6 rounded-t-lg">
@@ -625,6 +629,6 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
           </div>
         </div>
       </div>
-    </Dialog>
+    </Modal>
   );
 }

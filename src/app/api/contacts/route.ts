@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const binds: any[] = [];
 
   if (search) {
-    where.push(`(LOWER(first_name) LIKE ?1 OR LOWER(last_name) LIKE ?1 OR LOWER(email_primary) LIKE ?1 OR LOWER(company) LIKE ?1)`);
+    where.push(`(LOWER(first_name) LIKE ?1 OR LOWER(last_name) LIKE ?1 OR LOWER(email_primary) LIKE ?1 OR LOWER(company_name) LIKE ?1)`);
     binds.push(`%${search}%`);
   }
   if (priority && priority !== 'ALL') {
@@ -57,8 +57,16 @@ export async function GET(req: Request) {
       lastName: r.last_name || '',
       email: r.email_primary || '',
       secondEmail: r.email_secondary || '',
-      company: r.company || '',
-      website: r.website || '',
+      company: {
+        id: r.company_id,
+        name: r.company_name || '',
+        website: r.company_website || '',
+        linkedinUrl: r.company_linkedin || '',
+        industry: r.company_industry || '',
+        size: r.company_size || '',
+        description: r.company_description || '',
+        logoUrl: r.company_logo_url || ''
+      },
       linkedin: r.linkedin || '',
       facebook: r.facebook || '',
       instagram: r.instagram || '',
@@ -81,7 +89,7 @@ export async function GET(req: Request) {
   const highPriority = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts WHERE priority='HIGH'`).first();
   const mediumPriority = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts WHERE priority='MEDIUM'`).first();
   const lowPriority = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts WHERE priority='LOW'`).first();
-  const companies = await env.DB.prepare(`SELECT COUNT(DISTINCT company) as cnt FROM contacts WHERE company IS NOT NULL AND company<>''`).first();
+  const companies = await env.DB.prepare(`SELECT COUNT(DISTINCT company_id) as cnt FROM contacts WHERE company_id IS NOT NULL`).first();
 
   return Response.json({
     success: true,

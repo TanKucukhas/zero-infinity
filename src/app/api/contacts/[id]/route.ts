@@ -53,9 +53,16 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       lastName: contactRow.last_name || '',
       emailPrimary: contactRow.email_primary || '',
       emailSecondary: contactRow.email_secondary || '',
-      company: contactRow.company || '',
-      website: contactRow.website || '',
-      companyLinkedin: contactRow.company_linkedin || '',
+      company: {
+        id: contactRow.company_id,
+        name: contactRow.company_name || '',
+        website: contactRow.company_website || '',
+        linkedinUrl: contactRow.company_linkedin || '',
+        industry: contactRow.company_industry || '',
+        size: contactRow.company_size || '',
+        description: contactRow.company_description || '',
+        logoUrl: contactRow.company_logo_url || ''
+      },
       imdb: contactRow.imdb || '',
       facebook: contactRow.facebook || '',
       instagram: contactRow.instagram || '',
@@ -112,8 +119,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       emailPrimary,
       emailSecondary,
       company,
-      website,
-      companyLinkedin,
       imdb,
       facebook,
       instagram,
@@ -141,9 +146,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (lastName !== undefined) { updates.push(`last_name = ?${binds.length + 1}`); binds.push(lastName); }
     if (emailPrimary !== undefined) { updates.push(`email_primary = ?${binds.length + 1}`); binds.push(emailPrimary); }
     if (emailSecondary !== undefined) { updates.push(`email_secondary = ?${binds.length + 1}`); binds.push(emailSecondary); }
-    if (company !== undefined) { updates.push(`company = ?${binds.length + 1}`); binds.push(company); }
-    if (website !== undefined) { updates.push(`website = ?${binds.length + 1}`); binds.push(website); }
-    if (companyLinkedin !== undefined) { updates.push(`company_linkedin = ?${binds.length + 1}`); binds.push(companyLinkedin); }
+    if (company !== undefined) { updates.push(`company_id = ?${binds.length + 1}`); binds.push(company?.id || null); }
     if (imdb !== undefined) { updates.push(`imdb = ?${binds.length + 1}`); binds.push(imdb); }
     if (facebook !== undefined) { updates.push(`facebook = ?${binds.length + 1}`); binds.push(facebook); }
     if (instagram !== undefined) { updates.push(`instagram = ?${binds.length + 1}`); binds.push(instagram); }

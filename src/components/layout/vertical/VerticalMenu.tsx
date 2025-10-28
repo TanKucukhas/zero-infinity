@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Upload, Settings, ChevronRight, Circle, UserCog } from 'lucide-react';
+import { Home, Users, Upload, Settings, ChevronRight, Circle, UserCog, Building2 } from 'lucide-react';
 import classNames from 'classnames';
 import { useUser } from '@/contexts/user-context';
 
@@ -11,6 +11,7 @@ const VerticalMenu = ({ scrollMenu }: { scrollMenu: (container: any) => void }) 
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: Home },
     { href: '/people', label: 'People', icon: Users },
+    { href: '/companies', label: 'Companies', icon: Building2 },
     { href: '/import', label: 'Import Data', icon: Upload },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];

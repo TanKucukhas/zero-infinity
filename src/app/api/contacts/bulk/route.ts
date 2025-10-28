@@ -25,8 +25,6 @@ export async function POST(req: Request) {
           emailPrimary,
           emailSecondary,
           company,
-          website,
-          companyLinkedin,
           imdb,
           facebook,
           instagram,
@@ -49,21 +47,19 @@ export async function POST(req: Request) {
         const contactResult = await env.DB.prepare(`
           INSERT INTO contacts (
             first_name, last_name, email_primary, email_secondary,
-            company, website, company_linkedin,
+            company_id,
             imdb, facebook, instagram, linkedin, wikipedia,
             biography, priority, seen_film, doc_branch_member,
             location_country, location_state, location_city,
             location_state_text, location_city_text,
             is_active, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           firstName || null,
           lastName || null,
           emailPrimary || null,
           emailSecondary || null,
-          company || null,
-          website || null,
-          companyLinkedin || null,
+          company?.id || null,
           imdb || null,
           facebook || null,
           instagram || null,

@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { useNotifications } from "@/contexts/notification-context";
 import { NoPeopleEmptyState, NoSearchResultsEmptyState, ErrorEmptyState } from "@/components/empty-state";
 import ContactForm from "@/components/ContactForm";
+import { Company } from "@/components/companies/CompanySelect";
 
 type Person = {
   id: string;
@@ -33,8 +34,7 @@ type Person = {
   lastName: string;
   email: string;
   secondEmail: string;
-  company: string;
-  website: string;
+  company: Company | null;
   linkedin: string;
   facebook: string;
   instagram: string;
@@ -534,14 +534,14 @@ export default function PeopleTable() {
                         {person.company && (
                           <div className="flex items-center text-sm text-zinc-900 dark:text-zinc-100">
                             <Building className="h-3 w-3 mr-1.5 flex-shrink-0" />
-                            {person.company}
+                            {person.company.name}
                           </div>
                         )}
-                        {person.website && (
+                        {person.company?.website && (
                           <div className="flex items-center text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                             <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
                             <a 
-                              href={person.website} 
+                              href={person.company.website} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="hover:text-brand-600 dark:hover:text-brand-400 truncate"
@@ -785,7 +785,6 @@ export default function PeopleTable() {
           emailPrimary: editingContact.email,
           emailSecondary: editingContact.secondEmail,
           company: editingContact.company,
-          website: editingContact.website,
           linkedin: editingContact.linkedin,
           facebook: editingContact.facebook,
           instagram: editingContact.instagram,

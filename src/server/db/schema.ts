@@ -58,6 +58,23 @@ export const cities = sqliteTable("cities", {
   idx_city_state: uniqueIndex("u_cities_name_state").on(table.cityAscii, table.stateCode)
 }));
 
+// Companies
+export const companies = sqliteTable("companies", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  website: text("website"),
+  linkedinUrl: text("linkedin_url"),
+  industry: text("industry"),
+  size: text("size"),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  headquartersCountry: text("headquarters_country").references(() => countries.code),
+  headquartersState: text("headquarters_state").references(() => states.code),
+  headquartersCity: integer("headquarters_city").references(() => cities.id),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull()
+});
+
 // Contacts
 export const contacts = sqliteTable("contacts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -69,9 +86,7 @@ export const contacts = sqliteTable("contacts", {
   emailSecondary: text("email_secondary"),
   phoneNumber: text("phone_number"),
 
-  company: text("company"),
-  website: text("website"),
-  companyLinkedin: text("company_linkedin"),
+  companyId: integer("company_id").references(() => companies.id),
 
   imdb: text("imdb"),
   facebook: text("facebook"),
