@@ -7,7 +7,7 @@
 		"restart": "./scripts/restart-dev.sh",
 		"clean": "pkill -f 'node' && pkill -f 'next' && rm -rf .next",
 		"build": "next build",
-		"build:cf": "opennextjs-cloudflare build",
+		"build:cf": "./scripts/build-cf-fixed.sh",
 		"preview": "opennextjs-cloudflare preview",
 		"deploy": "opennextjs-cloudflare deploy",
 		"cf:typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
