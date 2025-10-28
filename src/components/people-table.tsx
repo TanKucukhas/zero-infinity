@@ -43,7 +43,9 @@ type Person = {
   imdb: string;
   wikipedia: string;
   priority: string;
-  assignedTo: string;
+  assignedTo: number | null;
+  assignedToName: string | null;
+  assignedToLastName: string | null;
   contacted: boolean;
   location: string;
   fullName: string;
@@ -133,7 +135,9 @@ export default function PeopleTable() {
           imdb: contact.imdb || '',
           wikipedia: contact.wikipedia || '',
           priority: contact.priority || 'NONE',
-          assignedTo: contact.assignedTo?.name || '',
+          assignedTo: contact.assignedTo || null,
+          assignedToName: contact.assignedToName || null,
+          assignedToLastName: contact.assignedToLastName || null,
           contacted: contact.status === 'ACTIVE' && contact.lastOutreachAt ? true : false,
           location: '', // API'de location bilgisi yok
           fullName: contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
@@ -558,7 +562,9 @@ export default function PeopleTable() {
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
               {people.map((person) => {
-                const assignedText = toDisplayString(person.assignedTo as unknown);
+                const assignedText = person.assignedToName && person.assignedToLastName 
+                  ? `${person.assignedToName} ${person.assignedToLastName}`
+                  : person.assignedToName || "";
                 const initials = (assignedText ? assignedText.substring(0, 2) : "UN").toUpperCase();
                 const avatarColor = getAvatarColor(initials);
                 

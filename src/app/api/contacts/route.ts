@@ -75,60 +75,25 @@ export async function GET(req: Request) {
     // Get contacts with company data and assignments
     let rows;
     try {
-      // First try simple query without joins
-      console.log("🔍 Trying simple query first...");
-      const simpleRows = await db
-        .select()
-        .from(contacts)
-        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-        .orderBy(desc(contacts.createdAt))
-        .limit(limit)
-        .offset((page - 1) * limit);
-      
-      console.log(`🔍 Simple query returned ${simpleRows.length} rows`);
-      if (simpleRows.length > 0) {
-        console.log("🔍 First simple row:", {
-          id: simpleRows[0].id,
-          firstName: simpleRows[0].firstName,
-          lastName: simpleRows[0].lastName,
-          emailPrimary: simpleRows[0].emailPrimary
-        });
-      }
-      
-      // Now try with joins
+      // Try with joins including assigned user
       rows = await db
         .select()
         .from(contacts)
         .leftJoin(companies, eq(companies.id, contacts.companyId))
-        .leftJoin(contactAssignments, eq(contactAssignments.contactId, contacts.id))
-        .leftJoin(users, eq(users.id, contactAssignments.userId))
+        .leftJoin(users, eq(users.id, contacts.assignedTo))
         .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
         .orderBy(desc(contacts.createdAt))
         .limit(limit)
         .offset((page - 1) * limit);
     } catch (e) {
-      console.warn('Falling back: selecting without phone_number column');
-      try {
-        rows = await db
-          .select()
-          .from(contacts)
-          .leftJoin(companies, eq(companies.id, contacts.companyId))
-          .leftJoin(contactAssignments, eq(contactAssignments.contactId, contacts.id))
-          .leftJoin(users, eq(users.id, contactAssignments.userId))
-          .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-          .orderBy(desc(contacts.createdAt))
-          .limit(limit)
-          .offset((page - 1) * limit);
-      } catch (e2) {
-        console.warn('Falling back: selecting without joins');
-        rows = await db
-          .select()
-          .from(contacts)
-          .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-          .orderBy(desc(contacts.createdAt))
-          .limit(limit)
-          .offset((page - 1) * limit);
-      }
+      console.warn('Falling back: selecting without joins');
+      rows = await db
+        .select()
+        .from(contacts)
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+        .orderBy(desc(contacts.createdAt))
+        .limit(limit)
+        .offset((page - 1) * limit);
     }
 
     console.log(`🔍 Final query returned ${rows.length} rows`);
@@ -155,7 +120,7 @@ export async function GET(req: Request) {
       companyName: r.companies?.name,
       companyWebsite: r.companies?.website,
       companyIndustry: r.companies?.industry,
-      assignedTo: r.contactAssignments?.userId,
+      assignedTo: r.contacts.assignedTo,
       assignedToName: r.users?.name,
       assignedToLastName: r.users?.lastName,
     }));
