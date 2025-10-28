@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Get database connection
     console.log("Getting Cloudflare context...");
+    let db;
     try {
       const context = await getCloudflareContext();
       console.log("Context received, env keys:", Object.keys(context.env || {}));
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       }
       
       console.log("D1 binding found, getting database...");
-      const db = getDb(env);
+      db = getDb(env);
       console.log("Database connection established");
     } catch (contextError) {
       console.error("Context error:", contextError);

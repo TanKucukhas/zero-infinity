@@ -33,6 +33,7 @@ type Person = {
   id: string;
   firstName: string;
   lastName: string;
+  name: string; // API'den gelen name field'ı
   email: string;
   secondEmail: string;
   company: Company | null;
@@ -117,7 +118,32 @@ export default function PeopleTable() {
       const result = await response.json();
       
       if (result.success) {
-        setPeople(result.data);
+        // API'den gelen veriyi frontend formatına çevir
+        const mappedData = result.data.map((contact: any) => ({
+          id: contact.id.toString(),
+          firstName: contact.firstName || '',
+          lastName: contact.lastName || '',
+          name: contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+          email: contact.emailPrimary || '',
+          secondEmail: contact.emailSecondary || '',
+          company: contact.company,
+          linkedin: contact.linkedinUrl || '',
+          facebook: contact.facebookUrl || '',
+          instagram: contact.instagramUrl || '',
+          imdb: contact.imdbUrl || '',
+          wikipedia: contact.wikipediaUrl || '',
+          priority: contact.priority || 'NONE',
+          assignedTo: contact.assignedTo?.name || '',
+          contacted: contact.status === 'ACTIVE' && contact.lastOutreachAt ? true : false,
+          location: '', // API'de location bilgisi yok
+          fullName: contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+          seenFilm: contact.flags?.seenFilm || false,
+          docBranchMember: contact.flags?.docBranchMember || false,
+          isActive: contact.isActive !== false,
+          createdAt: new Date(contact.createdAt).getTime(),
+        }));
+        
+        setPeople(mappedData);
         setPagination(result.pagination);
         setStats(result.stats);
       } else {
@@ -906,7 +932,16 @@ export default function PeopleTable() {
             cityId: null,
             stateText: null,
             cityText: null
-          }
+          },
+          // Assignment bilgilerini ekle
+          assignedUsers: editingContact.assignedTo ? [{
+            id: 0, // API'den gelen assignedTo sadece string, ID yok
+            name: editingContact.assignedTo.split(' ')[0] || '',
+            lastName: editingContact.assignedTo.split(' ').slice(1).join(' ') || '',
+            email: '',
+            role: 'viewer'
+          }] : [],
+          assignedUserIds: editingContact.assignedTo ? [0] : []
         } : undefined}
         title={editingContact ? "Edit Contact" : "Add Contact"}
       />

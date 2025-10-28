@@ -4,6 +4,7 @@ import { useUser } from "@/contexts/user-context";
 import { Moon, Sun, LogOut, Settings, User, Users, Search, Bell, UserCog, Shield, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import DbBadge from "@/components/ui/DbBadge";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -79,6 +80,9 @@ export default function Navbar() {
       
       {/* Right side - Theme, Notifications, User menu */}
       <div className="flex items-center gap-2">
+        {/* Database Badge */}
+        <DbBadge />
+
         {/* Theme Toggle */}
         <Button 
           variant="ghost" 
