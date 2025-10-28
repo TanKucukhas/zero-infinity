@@ -25,17 +25,23 @@ Bu dokümantasyon ZeroInfinity People Intel projesinin veritabanı mimarisi, gel
 ### Database Client Architecture
 
 ```typescript
+// src/server/db/config.ts
+export type DbSource = 'mock' | 'sqlite' | 'prod';
+export function getCurrentDbSource(env: any): DbSource {
+  const wanted = (process.env.DB_SOURCE || 'sqlite').toLowerCase();
+  if (wanted === 'mock') return 'mock';
+  if (wanted === 'prod') return env && env.DB ? 'prod' : 'sqlite';
+  return 'sqlite';
+}
+
 // src/server/db/client.ts
 export function getDb(env: any) {
-  // Production/Cloudflare Workers environment
-  if (env.DB) {
-    return drizzle(env.DB); // D1 driver
-  }
-  
-  // Local development environment
-  const sqlitePath = process.env.DEV_SQLITE_PATH || "./.data/dev.sqlite";
+  const source = getCurrentDbSource(env);
+  if (source === 'prod') return drizzle(env.DB);
+  if (source === 'mock') throw new Error("DB not available in 'mock' mode");
+  const sqlitePath = (process.env.DEV_SQLITE_PATH || './.data/dev.sqlite').replace(/^file:/, '');
   const sqlite = new Database(sqlitePath);
-  return drizzleSqlite(sqlite); // SQLite driver
+  return drizzleSqlite(sqlite);
 }
 ```
 
@@ -271,6 +277,9 @@ npm run db:restore:local sqlite
 
 # Restore local from production SQL backup
 npm run db:restore:local sql
+
+# Push production backup to local database
+npm run db:push:prod-to-local [backup-file]
 ```
 
 ### Backup Commands
@@ -310,20 +319,9 @@ npm run db:backup:local
 
 ### Mock Data (Local Development)
 
-Mock data is seeded using `scripts/seed_mock_data.ts`:
+Mock modunda veri `public/mock/*.json` altından edge-safe şekilde servis edilir.
 
-```bash
-# Seed local database with mock data
-npm run db:seed:mock
-```
-
-#### Mock Data Includes:
-- 5 countries (US, CA, GB, DE, FR)
-- 5 states (CA, NY, TX, ON, BC)
-- 5 cities (San Francisco, Los Angeles, New York, Toronto, Vancouver)
-- 3 users (Admin, John Doe, Jane Smith)
-- 3 companies (TechCorp Inc, Innovation Labs, Global Solutions)
-- 4 contacts (Alice Johnson, Bob Wilson, Carol Davis, David Brown)
+Örnek dosya: `public/mock/contacts.json`
 
 ### Production Data
 
@@ -339,6 +337,7 @@ Production data is managed separately:
 
 1. **Initialize Local Database**:
    ```bash
+   # İsteğe bağlı: sqlite modunda seed kullanabilirsiniz
    npm run db:seed:mock
    ```
 
@@ -564,14 +563,23 @@ const paginatedContacts = await db
 ### Local Development
 ```bash
 # .env.local (not tracked in git)
+# Use mock JSON (no persistence)
+DB_SOURCE=mock
+
+# Or use local SQLite file
+# DB_SOURCE=sqlite
 DEV_SQLITE_PATH=./.data/dev.sqlite
 NODE_ENV=development
 ```
 
 ### Production
 - Uses Cloudflare D1 binding (`DB`) from `wrangler.jsonc`
-- No local environment variables needed
+- Set `DB_SOURCE=prod` (effective only on Workers)
 - Configuration managed through Cloudflare dashboard
+
+### Health & UI
+- API: `GET /api/health/db` → `{ ok, source: 'mock'|'sqlite'|'prod' }`
+- UI: Header’daki rozet aktif kaynağı gösterir (Mock/SQLite/Prod)
 
 ## Tools & Utilities
 

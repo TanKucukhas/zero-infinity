@@ -1,6 +1,8 @@
 import { getCloudflareContext } from "@/server/cloudflare";
 import { getDb } from "@/server/db";
-import { contacts, companies, users } from "@/server/db/schema";
+import { isMockMode } from "@/server/db/config";
+import { readMockJson } from "@/server/db/mock";
+import { contacts, companies, users, contactAssignments } from "@/server/db/schema";
 import { eq, like, sql, desc, and } from "drizzle-orm";
 
 // Force dynamic rendering for Cloudflare Pages
@@ -10,170 +12,49 @@ export const dynamic = 'force-dynamic';
 // Supports: page, limit, search, priority
 export async function GET(req: Request) {
   try {
-    // For development, return mock data
-    if (process.env.NODE_ENV === 'development') {
+    const { env } = await getCloudflareContext();
+    // Mock modu ise dosyadan oku ve server-side paginate et
+    if (isMockMode(env)) {
+      const url = new URL(req.url);
+      const page = parseInt(url.searchParams.get('page') || '1', 10);
+      const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+      const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+      const priority = (url.searchParams.get('priority') || '').toUpperCase();
+
+      const all = await readMockJson<any[]>("contacts", req.url);
+      const filtered = all.filter((c) => {
+        const matchesSearch = !search ||
+          `${c.firstName} ${c.lastName}`.toLowerCase().includes(search) ||
+          (c.emailPrimary || '').toLowerCase().includes(search);
+        const matchesPriority = !priority || priority === 'ALL' || c.priority === priority;
+        return matchesSearch && matchesPriority;
+      });
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      const offset = (page - 1) * limit;
+      const data = filtered.slice(offset, offset + limit);
+
       return Response.json({
         success: true,
-        data: [
-          {
-            id: "1",
-            firstName: "Alice",
-            lastName: "Johnson",
-            emailPrimary: "alice.johnson@techcorp.com",
-            emailSecondary: "",
-            phoneNumber: "+1-555-0101",
-            linkedin: "https://linkedin.com/in/alicejohnson",
-            priority: "HIGH",
-            seenFilm: true,
-            docBranchMember: false,
-            biography: "Senior software engineer with 8 years of experience",
-            isActive: true,
-            inactiveReason: null,
-            inactiveAt: null,
-            createdAt: new Date(),
-            company: {
-              id: 1,
-              name: "TechCorp Inc",
-              website: "https://techcorp.com",
-              industry: "Technology",
-              size: "50-200",
-              description: "Leading technology company",
-              logoUrl: null,
-              headquarters: {
-                countryCode: "US",
-                stateCode: "CA",
-                cityId: 1,
-                countryName: "United States",
-                stateName: "California",
-                cityName: "San Francisco"
-              },
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            assignedTo: {
-              id: 2,
-              name: "John Doe"
-            },
-            location: "San Francisco, CA"
-          },
-          {
-            id: "2",
-            firstName: "Bob",
-            lastName: "Wilson",
-            emailPrimary: "bob.wilson@innovationlabs.com",
-            emailSecondary: "",
-            phoneNumber: "+1-555-0102",
-            linkedin: "https://linkedin.com/in/bobwilson",
-            priority: "MEDIUM",
-            seenFilm: false,
-            docBranchMember: true,
-            biography: "Product manager specializing in agile methodologies",
-            isActive: true,
-            inactiveReason: null,
-            inactiveAt: null,
-            createdAt: new Date(),
-            company: {
-              id: 2,
-              name: "Innovation Labs",
-              website: "https://innovationlabs.com",
-              industry: "Software",
-              size: "10-50",
-              description: "Software development and consulting",
-              logoUrl: null,
-              headquarters: {
-                countryCode: "US",
-                stateCode: "NY",
-                cityId: 3,
-                countryName: "United States",
-                stateName: "New York",
-                cityName: "New York"
-              },
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            assignedTo: {
-              id: 3,
-              name: "Jane Smith"
-            },
-            location: "New York, NY"
-          },
-          {
-            id: "3",
-            firstName: "Carol",
-            lastName: "Davis",
-            emailPrimary: "carol.davis@globalsolutions.ca",
-            emailSecondary: "",
-            phoneNumber: "+1-555-0103",
-            linkedin: "https://linkedin.com/in/caroldavis",
-            priority: "LOW",
-            seenFilm: true,
-            docBranchMember: true,
-            biography: "Business analyst with expertise in data visualization",
-            isActive: true,
-            inactiveReason: null,
-            inactiveAt: null,
-            createdAt: new Date(),
-            company: {
-              id: 3,
-              name: "Global Solutions",
-              website: "https://globalsolutions.ca",
-              industry: "Consulting",
-              size: "200+",
-              description: "International consulting firm",
-              logoUrl: null,
-              headquarters: {
-                countryCode: "CA",
-                stateCode: "ON",
-                cityId: 4,
-                countryName: "Canada",
-                stateName: "Ontario",
-                cityName: "Toronto"
-              },
-              createdAt: new Date(),
-              updatedAt: new Date()
-            },
-            assignedTo: {
-              id: 1,
-              name: "Admin User"
-            },
-            location: "Toronto, ON"
-          },
-          {
-            id: "4",
-            firstName: "David",
-            lastName: "Brown",
-            emailPrimary: "david.brown@freelance.com",
-            emailSecondary: "",
-            phoneNumber: "+1-555-0104",
-            linkedin: "https://linkedin.com/in/davidbrown",
-            priority: "NONE",
-            seenFilm: false,
-            docBranchMember: false,
-            biography: "Freelance consultant and entrepreneur",
-            isActive: true,
-            inactiveReason: null,
-            inactiveAt: null,
-            createdAt: new Date(),
-            company: null,
-            assignedTo: null,
-            location: "Texas, US"
-          }
-        ],
+        data,
         pagination: {
-          page: 1,
-          limit: 20,
-          total: 4,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
         }
       });
     }
-    
-    const { env } = await getCloudflareContext();
+
     console.log("Cloudflare context obtained");
     const db = getDb(env);
     console.log("Database connection obtained");
+    
+    // Debug: Check if we have any contacts at all
+    const totalContacts = await db.select({ count: sql<number>`count(*)` }).from(contacts);
+    console.log(`🔍 Total contacts in database: ${totalContacts[0]?.count || 0}`);
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
@@ -205,47 +86,190 @@ export async function GET(req: Request) {
     const totalPages = Math.ceil(total / limit) || 1;
     const offset = (page - 1) * limit;
 
-    // Get contacts with company data
-    const rows = await db
-      .select({
-        id: contacts.id,
-        firstName: contacts.firstName,
-        lastName: contacts.lastName,
-        emailPrimary: contacts.emailPrimary,
-        emailSecondary: contacts.emailSecondary,
-        phoneNumber: contacts.phoneNumber,
-        linkedin: contacts.linkedin,
-        priority: contacts.priority,
-        isActive: contacts.isActive,
-        createdAt: contacts.createdAt,
-        companyId: contacts.companyId,
-        companyName: companies.name,
-        companyWebsite: companies.website,
-        companyIndustry: companies.industry,
-        assignedTo: contacts.assignedTo,
-        assignedToName: users.name,
-        assignedToLastName: users.lastName,
-      })
-      .from(contacts)
-      .leftJoin(companies, eq(companies.id, contacts.companyId))
-      .leftJoin(users, eq(users.id, contacts.assignedTo))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(contacts.createdAt))
-      .limit(limit)
-      .offset(offset);
+    // Get contacts with company data and assignments
+    let rows;
+    try {
+      // First try simple query without joins
+      console.log("🔍 Trying simple query first...");
+      const simpleRows = await db
+        .select({
+          id: contacts.id,
+          firstName: contacts.firstName,
+          lastName: contacts.lastName,
+          emailPrimary: contacts.emailPrimary,
+          emailSecondary: contacts.emailSecondary,
+          phoneNumber: contacts.phoneNumber,
+          linkedin: contacts.linkedin,
+          imdb: contacts.imdb,
+          facebook: contacts.facebook,
+          instagram: contacts.instagram,
+          wikipedia: contacts.wikipedia,
+          priority: contacts.priority,
+          isActive: contacts.isActive,
+          seenFilm: contacts.seenFilm,
+          docBranchMember: contacts.docBranchMember,
+          createdAt: contacts.createdAt,
+        })
+        .from(contacts)
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+        .orderBy(desc(contacts.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      console.log(`🔍 Simple query returned ${simpleRows.length} rows`);
+      if (simpleRows.length > 0) {
+        console.log("🔍 First simple row:", {
+          id: simpleRows[0].id,
+          firstName: simpleRows[0].firstName,
+          lastName: simpleRows[0].lastName,
+          emailPrimary: simpleRows[0].emailPrimary
+        });
+      }
+      
+      // Now try with joins
+      rows = await db
+        .select({
+          id: contacts.id,
+          firstName: contacts.firstName,
+          lastName: contacts.lastName,
+          emailPrimary: contacts.emailPrimary,
+          emailSecondary: contacts.emailSecondary,
+          phoneNumber: contacts.phoneNumber,
+          linkedin: contacts.linkedin,
+          imdb: contacts.imdb,
+          facebook: contacts.facebook,
+          instagram: contacts.instagram,
+          wikipedia: contacts.wikipedia,
+          priority: contacts.priority,
+          isActive: contacts.isActive,
+          seenFilm: contacts.seenFilm,
+          docBranchMember: contacts.docBranchMember,
+          createdAt: contacts.createdAt,
+          companyId: contacts.companyId,
+          companyName: companies.name,
+          companyWebsite: companies.website,
+          companyIndustry: companies.industry,
+          assignedTo: contactAssignments.userId,
+          assignedToName: users.name,
+          assignedToLastName: users.lastName,
+        })
+        .from(contacts)
+        .leftJoin(companies, eq(companies.id, contacts.companyId))
+        .leftJoin(contactAssignments, eq(contactAssignments.contactId, contacts.id))
+        .leftJoin(users, eq(users.id, contactAssignments.userId))
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+        .orderBy(desc(contacts.createdAt))
+        .limit(limit)
+        .offset(offset);
+    } catch (e) {
+      console.warn('Falling back: selecting without phone_number column');
+      try {
+        rows = await db
+          .select({
+            id: contacts.id,
+            firstName: contacts.firstName,
+            lastName: contacts.lastName,
+            emailPrimary: contacts.emailPrimary,
+            emailSecondary: contacts.emailSecondary,
+            phoneNumber: sql<string>`NULL`,
+            linkedin: contacts.linkedin,
+            imdb: contacts.imdb,
+            facebook: contacts.facebook,
+            instagram: contacts.instagram,
+            wikipedia: contacts.wikipedia,
+            priority: contacts.priority,
+            isActive: contacts.isActive,
+            seenFilm: contacts.seenFilm,
+            docBranchMember: contacts.docBranchMember,
+            createdAt: contacts.createdAt,
+            companyId: contacts.companyId,
+            companyName: companies.name,
+            companyWebsite: companies.website,
+            companyIndustry: companies.industry,
+            assignedTo: contactAssignments.userId,
+            assignedToName: users.name,
+            assignedToLastName: users.lastName,
+          })
+          .from(contacts)
+          .leftJoin(companies, eq(companies.id, contacts.companyId))
+          .leftJoin(contactAssignments, eq(contactAssignments.contactId, contacts.id))
+          .leftJoin(users, eq(users.id, contactAssignments.userId))
+          .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+          .orderBy(desc(contacts.createdAt))
+          .limit(limit)
+          .offset(offset);
+      } catch (e2) {
+        console.warn('Second fallback: selecting without assignments join');
+        rows = await db
+          .select({
+            id: contacts.id,
+            firstName: contacts.firstName,
+            lastName: contacts.lastName,
+            emailPrimary: contacts.emailPrimary,
+            emailSecondary: contacts.emailSecondary,
+            phoneNumber: sql<string>`NULL`,
+            linkedin: contacts.linkedin,
+            imdb: contacts.imdb,
+            facebook: contacts.facebook,
+            instagram: contacts.instagram,
+            wikipedia: contacts.wikipedia,
+            priority: contacts.priority,
+            isActive: contacts.isActive,
+            seenFilm: contacts.seenFilm,
+            docBranchMember: contacts.docBranchMember,
+            createdAt: contacts.createdAt,
+            companyId: contacts.companyId,
+            companyName: companies.name,
+            companyWebsite: companies.website,
+            companyIndustry: companies.industry,
+            assignedTo: sql<number>`NULL`,
+            assignedToName: sql<string>`NULL`,
+            assignedToLastName: sql<string>`NULL`,
+          })
+          .from(contacts)
+          .leftJoin(companies, eq(companies.id, contacts.companyId))
+          .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+          .orderBy(desc(contacts.createdAt))
+          .limit(limit)
+          .offset(offset);
+      }
+    }
+
+    // Debug: Log first few rows
+    console.log("🔍 Debug: First few rows from database:");
+    rows.slice(0, 3).forEach((r, index) => {
+      console.log(`   Row ${index + 1}:`, {
+        id: r.id,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        emailPrimary: r.emailPrimary,
+        linkedin: r.linkedin,
+        companyName: r.companyName
+      });
+    });
 
     const data = rows.map((r) => ({
       id: r.id,
       firstName: r.firstName,
       lastName: r.lastName,
+      name: `${r.firstName || ''} ${r.lastName || ''}`.trim(), // Add name field
       emailPrimary: r.emailPrimary,
       emailSecondary: r.emailSecondary,
       phonePrimary: r.phoneNumber,
       phoneSecondary: null,
       linkedinUrl: r.linkedin,
       twitterUrl: null,
+      imdbUrl: r.imdb,
+      facebookUrl: r.facebook,
+      instagramUrl: r.instagram,
+      wikipediaUrl: r.wikipedia,
       priority: r.priority,
       status: r.isActive ? 'ACTIVE' : 'INACTIVE',
+      isActive: r.isActive, // Separate field for inactive status
+      flags: {
+        seenFilm: r.seenFilm,
+        docBranchMember: r.docBranchMember
+      },
       notes: null,
       lastOutreachAt: null,
       createdAt: r.createdAt,
@@ -284,8 +308,9 @@ export async function GET(req: Request) {
 // POST /api/contacts - Create new contact
 export async function POST(req: Request) {
   try {
-    // For development, return mock response
-    if (process.env.NODE_ENV === 'development') {
+    const { env } = await getCloudflareContext();
+    // Mock modunda persist etmeden sahte başarı dön
+    if (isMockMode(env)) {
       const body = await req.json();
       const { firstName, lastName, emailPrimary } = body;
       
@@ -311,11 +336,10 @@ export async function POST(req: Request) {
           companyId: body.companyId || null,
           createdAt: new Date()
         }, 
-        message: "Contact created successfully (mock response)" 
+        message: "Contact created successfully (mock mode - not persisted)" 
       });
     }
-    
-    const { env } = await getCloudflareContext();
+
     const db = getDb(env);
     const body = await req.json();
     const {
@@ -355,22 +379,41 @@ export async function POST(req: Request) {
       }, { status: 409 });
     }
 
-    // Insert new contact
-    const newContact = await db
-      .insert(contacts)
-      .values({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        emailPrimary: emailPrimary.trim(),
-        emailSecondary: emailSecondary?.trim() || null,
-        phoneNumber: phonePrimary?.trim() || null,
-        linkedin: linkedinUrl?.trim() || null,
-        priority: priority || 'NONE',
-        isActive: status !== 'INACTIVE',
-        companyId: companyId || null,
-        createdAt: new Date()
-      })
-      .returning();
+    // Insert new contact (fallback if some columns are missing locally)
+    let newContact;
+    try {
+      newContact = await db
+        .insert(contacts)
+        .values({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          emailPrimary: emailPrimary.trim(),
+          emailSecondary: emailSecondary?.trim() || null,
+          phoneNumber: phonePrimary?.trim() || null,
+          linkedin: linkedinUrl?.trim() || null,
+          priority: priority || 'NONE',
+          isActive: status !== 'INACTIVE',
+          companyId: companyId || null,
+          createdAt: new Date()
+        })
+        .returning();
+    } catch (e) {
+      // Retry without phoneNumber if column is missing in local sqlite
+      newContact = await db
+        .insert(contacts)
+        .values({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          emailPrimary: emailPrimary.trim(),
+          emailSecondary: emailSecondary?.trim() || null,
+          linkedin: linkedinUrl?.trim() || null,
+          priority: priority || 'NONE',
+          isActive: status !== 'INACTIVE',
+          companyId: companyId || null,
+          createdAt: new Date()
+        })
+        .returning();
+    }
 
     return Response.json({ 
       success: true, 

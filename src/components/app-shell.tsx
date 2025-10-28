@@ -33,6 +33,7 @@ import {
 } from "@mui/icons-material";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import DbBadge from "@/components/ui/DbBadge";
 
 const theme = createTheme({
   palette: {
@@ -160,6 +161,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               People Intel
             </Typography>
+            <DbBadge />
             {session ? (
               <>
                 <IconButton

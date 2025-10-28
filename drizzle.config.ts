@@ -5,7 +5,12 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "sqlite",
   dbCredentials: { 
-    url: process.env.DATABASE_URL || "file:./local.db"
+    // Accept DEV_SQLITE_PATH as a filesystem path (recommended) or a drizzle URL starting with "file:"
+    // Always ensure drizzle receives a URL with the "file:" prefix
+    url: (() => {
+      const p = process.env.DEV_SQLITE_PATH || "./.data/dev.sqlite";
+      return p.startsWith("file:") ? p : `file:${p}`;
+    })()
   }
 });
 

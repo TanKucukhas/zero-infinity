@@ -37,6 +37,9 @@ npm run db:backup:local
 # Restore local from backup
 npm run db:restore:local sqlite  # From SQLite backup
 npm run db:restore:local sql     # From production SQL backup
+
+# Push production backup to local database
+npm run db:push:prod-to-local [backup-file]
 ```
 
 #### Development Setup
@@ -86,13 +89,26 @@ npm run deploy:prod --yes
 #### Local Development
 ```bash
 # .env.local (not tracked in git)
+## Choose DB source for local dev
+# Use mock JSON (no persistence)
+DB_SOURCE=mock
+# Mock JSON served from public: /public/mock/*.json
+
+# Or use local SQLite file
+# DB_SOURCE=sqlite
 DEV_SQLITE_PATH=./.data/dev.sqlite
 NODE_ENV=development
 ```
 
 #### Production
 - Uses Cloudflare D1 binding (`DB`) from `wrangler.jsonc`
-- No local environment variables needed
+- Set `DB_SOURCE=prod` (effective only on Workers where `env.DB` exists)
+- No other local environment variables needed
+
+#### Health & UI
+- `GET /api/health/db` returns `{ ok, source: 'mock'|'sqlite'|'prod' }`
+- Header’da DB rozeti (Mock/SQLite/Prod) otomatik görünür
+- Mock modda veriler `public/mock/*.json` üzerinden okunur (edge-safe)
 
 ### Troubleshooting
 

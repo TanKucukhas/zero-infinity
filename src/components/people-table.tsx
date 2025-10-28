@@ -183,6 +183,18 @@ export default function PeopleTable() {
     }
   };
 
+  const toDisplayString = (value: unknown): string => {
+    if (typeof value === "string") return value;
+    if (typeof value === "number") return String(value);
+    if (Array.isArray(value)) return value.map(v => (typeof v === "string" ? v : "")).filter(Boolean).join(", ");
+    if (value && typeof value === "object") {
+      const obj = value as Record<string, unknown>;
+      const candidate = obj.name ?? obj.label ?? obj.title;
+      if (typeof candidate === "string") return candidate;
+    }
+    return "";
+  };
+
   // Handle CSV import
   const handleImport = () => {
     addNotification({
@@ -520,7 +532,8 @@ export default function PeopleTable() {
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
               {people.map((person) => {
-                const initials = person.assignedTo?.substring(0, 2).toUpperCase() || "UN";
+                const assignedText = toDisplayString(person.assignedTo as unknown);
+                const initials = (assignedText ? assignedText.substring(0, 2) : "UN").toUpperCase();
                 const avatarColor = getAvatarColor(initials);
                 
                 return (
@@ -662,13 +675,13 @@ export default function PeopleTable() {
                     </td>
                     
                     <td className="px-4 py-1.5">
-                      {person.assignedTo ? (
+                      {assignedText ? (
                         <div className="flex items-center gap-2">
                           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium ${avatarColor.bg} ${avatarColor.text}`}>
                             {initials}
                           </div>
-                          <span className="text-xs text-zinc-600 dark:text-zinc-400" title={`Assigned to ${person.assignedTo}`}>
-                            {person.assignedTo}
+                          <span className="text-xs text-zinc-600 dark:text-zinc-400" title={`Assigned to ${assignedText}`}>
+                            {assignedText}
                           </span>
                         </div>
                       ) : (

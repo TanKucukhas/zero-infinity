@@ -1,0 +1,148 @@
+[
+  {
+    "id": "1",
+    "firstName": "Alice",
+    "lastName": "Johnson",
+    "emailPrimary": "alice.johnson@techcorp.com",
+    "emailSecondary": "",
+    "phoneNumber": "+1-555-0101",
+    "linkedin": "https://linkedin.com/in/alicejohnson",
+    "priority": "HIGH",
+    "seenFilm": true,
+    "docBranchMember": false,
+    "biography": "Senior software engineer with 8 years of experience",
+    "isActive": true,
+    "inactiveReason": null,
+    "inactiveAt": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "company": {
+      "id": 1,
+      "name": "TechCorp Inc",
+      "website": "https://techcorp.com",
+      "industry": "Technology",
+      "size": "50-200",
+      "description": "Leading technology company",
+      "logoUrl": null,
+      "headquarters": {
+        "countryCode": "US",
+        "stateCode": "CA",
+        "cityId": 1,
+        "countryName": "United States",
+        "stateName": "California",
+        "cityName": "San Francisco"
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "assignedTo": {
+      "id": 2,
+      "name": "John Doe"
+    },
+    "location": "San Francisco, CA"
+  },
+  {
+    "id": "2",
+    "firstName": "Bob",
+    "lastName": "Wilson",
+    "emailPrimary": "bob.wilson@innovationlabs.com",
+    "emailSecondary": "",
+    "phoneNumber": "+1-555-0102",
+    "linkedin": "https://linkedin.com/in/bobwilson",
+    "priority": "MEDIUM",
+    "seenFilm": false,
+    "docBranchMember": true,
+    "biography": "Product manager specializing in agile methodologies",
+    "isActive": true,
+    "inactiveReason": null,
+    "inactiveAt": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "company": {
+      "id": 2,
+      "name": "Innovation Labs",
+      "website": "https://innovationlabs.com",
+      "industry": "Software",
+      "size": "10-50",
+      "description": "Software development and consulting",
+      "logoUrl": null,
+      "headquarters": {
+        "countryCode": "US",
+        "stateCode": "NY",
+        "cityId": 3,
+        "countryName": "United States",
+        "stateName": "New York",
+        "cityName": "New York"
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "assignedTo": {
+      "id": 3,
+      "name": "Jane Smith"
+    },
+    "location": "New York, NY"
+  },
+  {
+    "id": "3",
+    "firstName": "Carol",
+    "lastName": "Davis",
+    "emailPrimary": "carol.davis@globalsolutions.ca",
+    "emailSecondary": "",
+    "phoneNumber": "+1-555-0103",
+    "linkedin": "https://linkedin.com/in/caroldavis",
+    "priority": "LOW",
+    "seenFilm": true,
+    "docBranchMember": true,
+    "biography": "Business analyst with expertise in data visualization",
+    "isActive": true,
+    "inactiveReason": null,
+    "inactiveAt": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "company": {
+      "id": 3,
+      "name": "Global Solutions",
+      "website": "https://globalsolutions.ca",
+      "industry": "Consulting",
+      "size": "200+",
+      "description": "International consulting firm",
+      "logoUrl": null,
+      "headquarters": {
+        "countryCode": "CA",
+        "stateCode": "ON",
+        "cityId": 4,
+        "countryName": "Canada",
+        "stateName": "Ontario",
+        "cityName": "Toronto"
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "assignedTo": {
+      "id": 1,
+      "name": "Admin User"
+    },
+    "location": "Toronto, ON"
+  },
+  {
+    "id": "4",
+    "firstName": "David",
+    "lastName": "Brown",
+    "emailPrimary": "david.brown@freelance.com",
+    "emailSecondary": "",
+    "phoneNumber": "+1-555-0104",
+    "linkedin": "https://linkedin.com/in/davidbrown",
+    "priority": "NONE",
+    "seenFilm": false,
+    "docBranchMember": false,
+    "biography": "Freelance consultant and entrepreneur",
+    "isActive": true,
+    "inactiveReason": null,
+    "inactiveAt": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "company": null,
+    "assignedTo": null,
+    "location": "Texas, US"
+  }
+]
+
+
+

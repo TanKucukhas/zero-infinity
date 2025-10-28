@@ -10,43 +10,6 @@ export const dynamic = 'force-dynamic';
 // Supports: search (for autocomplete), page, limit
 export async function GET(req: Request) {
   try {
-    // For development, return mock data
-    if (process.env.NODE_ENV === 'development') {
-      return Response.json({
-        success: true,
-        data: [
-          {
-            id: 1,
-            name: "Example Corp",
-            website: "https://example.com",
-            linkedinUrl: "https://linkedin.com/company/example-corp",
-            industry: "Technology",
-            size: "50-200",
-            description: "A technology company",
-            logoUrl: null,
-            headquarters: {
-              countryCode: "US",
-              stateCode: "CA",
-              cityId: 1,
-              countryName: "United States",
-              stateName: "California",
-              cityName: "San Francisco"
-            },
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ],
-        pagination: {
-          page: 1,
-          limit: 20,
-          total: 1,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false
-        }
-      });
-    }
-    
     const { env } = await getCloudflareContext();
     const db = getDb(env);
     const url = new URL(req.url);

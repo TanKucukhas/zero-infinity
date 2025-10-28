@@ -17,10 +17,14 @@
 		"db:backup:prod": "tsx scripts/prod_backup.ts",
 		"db:backup:local": "tsx scripts/local_backup.ts",
 		"db:restore:local": "tsx scripts/local_restore.ts",
+		"db:push:prod-to-local": "tsx scripts/push_prod_to_local.ts",
+		"db:test:local": "tsx scripts/test_local_db.ts",
+		"db:inspect:local": "tsx scripts/inspect_local_db.ts",
 		"db:studio": "drizzle-kit studio",
 		"db:seed:mock": "tsx scripts/seed_mock_data.ts",
 		"db:seed:locations": "tsx scripts/seed_locations.ts",
 		"db:import:csv": "tsx scripts/import_clean_csv.ts",
+		"db:ensure:columns": "tsx scripts/ensure_phone_number_column.ts",
 		"deploy:prod": "tsx scripts/deploy_prod.ts"
 	},
 	"dependencies": {
