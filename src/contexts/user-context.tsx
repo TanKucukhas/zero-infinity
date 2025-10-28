@@ -12,12 +12,14 @@ type UserContextType = {
   user: User | null;
   setUser: (user: User | null) => void;
   logout: () => void;
+  isReady: boolean;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     // Check localStorage for user data (only on client side)
@@ -31,6 +33,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem("user");
         }
       }
+      setIsReady(true);
     }
   }, []);
 
@@ -45,7 +48,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser, logout }}>
+    <UserContext.Provider value={{ user, setUser, logout, isReady }}>
       {children}
     </UserContext.Provider>
   );

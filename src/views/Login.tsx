@@ -3,6 +3,7 @@ import { Eye, EyeOff, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/contexts/user-context";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function Login() {
@@ -13,6 +14,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { setUser } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +38,8 @@ export default function Login() {
 
       if (response.ok) {
         localStorage.setItem("user", JSON.stringify(data.user));
-        // Reload page to update UserContext
-        window.location.href = "/contacts";
+        setUser(data.user);
+        router.replace("/contacts");
       } else {
         setError(data.error || "Login failed");
       }
