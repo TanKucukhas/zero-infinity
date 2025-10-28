@@ -18,8 +18,11 @@ async function checkAdminAccess(req: Request) {
 
 // GET /api/users
 // Returns all users from users table - admin only
+// Supports search parameter for autocomplete functionality
 export async function GET(req: Request) {
   const { env } = getCloudflareContext();
+  const url = new URL(req.url);
+  const search = (url.searchParams.get('search') || '').trim().toLowerCase();
   
   try {
     // Check admin access
@@ -31,8 +34,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // Fetch all users from database
-    const rows = await env.DB.prepare(`
+    // Build query with optional search
+    let query = `
       SELECT 
         id,
         name,
@@ -42,8 +45,28 @@ export async function GET(req: Request) {
         status,
         created_at
       FROM users
-      ORDER BY created_at DESC
-    `).all();
+    `;
+    
+    const binds: any[] = [];
+    
+    if (search) {
+      query += ` WHERE (
+        LOWER(name) LIKE ? OR 
+        LOWER(last_name) LIKE ? OR 
+        LOWER(email) LIKE ?
+      )`;
+      const searchPattern = `%${search}%`;
+      binds.push(searchPattern, searchPattern, searchPattern);
+    }
+    
+    query += ` ORDER BY created_at DESC`;
+    
+    // Add limit for search results to improve performance
+    if (search) {
+      query += ` LIMIT 50`;
+    }
+
+    const rows = await env.DB.prepare(query).bind(...binds).all();
 
     const users = (rows?.results || []).map((r: any) => ({
       id: r.id,
