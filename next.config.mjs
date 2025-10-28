@@ -7,8 +7,6 @@ const __dirname = path.dirname(__filename)
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  basePath: process.env.BASEPATH,
-  output: 'standalone',
   experimental: {
     serverComponentsExternalPackages: ['@opennextjs/cloudflare']
   },

@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { getCloudflareContext } from "@/server/cloudflare";
 import { getDb } from "@/server/db";
 import { companies, countries, states, cities, contacts } from "@/server/db/schema";
@@ -7,7 +6,7 @@ import { eq, sql } from "drizzle-orm";
 // GET /api/companies/[id] - Get single company details
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     const companyId = parseInt(params.id, 10);
     
@@ -76,7 +75,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // PUT /api/companies/[id] - Update company
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     const companyId = parseInt(params.id, 10);
     
@@ -214,7 +213,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 // DELETE /api/companies/[id] - Delete company (only if no contacts reference it)
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     const companyId = parseInt(params.id, 10);
     

@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { getCloudflareContext } from "@/server/cloudflare";
 import { getDb } from "@/server/db";
 import { companies, countries, states, cities } from "@/server/db/schema";
@@ -45,7 +44,7 @@ export async function GET(req: Request) {
       });
     }
     
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     const url = new URL(req.url);
     const search = (url.searchParams.get('search') || '').trim().toLowerCase();
@@ -140,7 +139,7 @@ export async function GET(req: Request) {
 // POST /api/companies - Create new company
 export async function POST(req: Request) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     const body = await req.json();
     const {

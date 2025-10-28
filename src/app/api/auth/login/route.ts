@@ -4,8 +4,6 @@ import { getDb } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
-export const runtime = "edge";
-
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
@@ -21,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get database connection
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
 
     // Check if user exists in database

@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { getCloudflareContext } from "@/server/cloudflare";
 import { getDb } from "@/server/db";
 import { states } from "@/server/db/schema";
@@ -91,7 +90,7 @@ export async function GET(req: Request) {
       });
     }
     
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     
     const statesData = await db

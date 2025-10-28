@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { getCloudflareContext } from "@/server/cloudflare";
 import { getDb } from "@/server/db";
 import { contacts, companies, users } from "@/server/db/schema";
@@ -113,7 +112,7 @@ export async function GET(req: Request) {
       });
     }
     
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     console.log("Cloudflare context obtained");
     const db = getDb(env);
     console.log("Database connection obtained");
@@ -220,7 +219,7 @@ export async function GET(req: Request) {
 // POST /api/contacts - Create new contact
 export async function POST(req: Request) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const db = getDb(env);
     const body = await req.json();
     const {
