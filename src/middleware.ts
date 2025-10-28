@@ -18,20 +18,6 @@ export function middleware(req: NextRequest) {
     pathname === "/robots.txt" ||
     pathname === "/";
 
-  // For protected routes, let the client-side handle authentication
-  // The dashboard layout will check for user authentication
-  if (!isPublic) {
-    // Check if it's a bot/crawler - only redirect if it's not a static asset
-    const userAgent = req.headers.get("user-agent") || "";
-    const isBot = /bot|crawler|spider|crawling/i.test(userAgent);
-    const isStaticAsset = pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/);
-    
-    if (isBot && !isStaticAsset) {
-      // Allow bots to access public content only
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-  }
-
   const res = NextResponse.next();
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   res.headers.set("X-Content-Type-Options", "nosniff");
