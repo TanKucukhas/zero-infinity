@@ -22,8 +22,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Get database connection
-    const { env } = await getCloudflareContext();
-    const db = getDb(env);
+    console.log("Getting Cloudflare context...");
+    try {
+      const context = await getCloudflareContext();
+      console.log("Context received, env keys:", Object.keys(context.env || {}));
+      const { env } = context;
+      
+      // Check if D1 binding exists
+      if (!('DB' in env)) {
+        console.error('Missing D1 binding DB. Env keys:', Object.keys(env));
+        return NextResponse.json({ error: 'Database unavailable' }, { status: 500 });
+      }
+      
+      console.log("D1 binding found, getting database...");
+      const db = getDb(env);
+      console.log("Database connection established");
+    } catch (contextError) {
+      console.error("Context error:", contextError);
+      return NextResponse.json({ 
+        error: 'Context error', 
+        details: contextError instanceof Error ? contextError.message : 'Unknown context error'
+      }, { status: 500 });
+    }
 
     // Check if user exists in database
     const userResult = await db.select({
@@ -80,8 +100,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("Login error:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
+    console.error("Error message:", error instanceof Error ? error.message : 'No message');
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
