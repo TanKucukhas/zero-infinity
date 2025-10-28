@@ -56,15 +56,24 @@ export async function GET(req: Request) {
       updatedAt: r.companies.updatedAt
     }));
 
+    // Get total count for pagination
+    const totalCount = await db
+      .select()
+      .from(companies)
+      .where(whereConditions.length > 0 ? whereConditions[0] : undefined);
+    
+    const total = totalCount.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+
     return Response.json({
       success: true,
       data,
       pagination: {
         page,
         limit,
-        total: data.length,
-        totalPages: Math.ceil(data.length / limit) || 1,
-        hasNext: page < Math.ceil(data.length / limit),
+        total,
+        totalPages,
+        hasNext: page < totalPages,
         hasPrev: page > 1
       }
     });
