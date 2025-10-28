@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Settings } from "lucide-react";
+import { Users, Settings, UserCog } from "lucide-react";
 import classNames from "classnames";
+import { useUser } from "@/contexts/user-context";
 
 const menuItems = [
   { href: "/contacts", label: "Contacts", icon: Users },
@@ -11,10 +12,17 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
+
+  // Create menu items based on user role
+  const adminMenuItems = [...menuItems];
+  if (user && user.role === 'admin') {
+    adminMenuItems.splice(1, 0, { href: "/users", label: "Users", icon: UserCog });
+  }
 
   return (
     <nav className="space-y-1">
-      {menuItems.map(item => {
+      {adminMenuItems.map(item => {
         const Icon = item.icon;
         const isActive = pathname === item.href;
         

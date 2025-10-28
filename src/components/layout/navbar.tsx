@@ -1,7 +1,7 @@
 "use client";
 import { useTheme } from "@/hooks/use-theme";
 import { useUser } from "@/contexts/user-context";
-import { Moon, Sun, LogOut, Settings, User, Users, Search, Bell } from "lucide-react";
+import { Moon, Sun, LogOut, Settings, User, Users, Search, Bell, UserCog, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -128,6 +128,27 @@ export default function Navbar() {
                   <Settings className="h-4 w-4" />
                   Settings
                 </Link>
+                
+                {/* Admin Section - Only show for admin users */}
+                {user && user.role === 'admin' && (
+                  <>
+                    <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        <Shield className="h-3 w-3" />
+                        Admin
+                      </div>
+                    </div>
+                    
+                    <Link
+                      href="/users"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      <UserCog className="h-4 w-4" />
+                      Manage Users
+                    </Link>
+                  </>
+                )}
                 
                 <button
                   onClick={() => {

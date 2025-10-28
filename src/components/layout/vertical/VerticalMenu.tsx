@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Upload, Settings, ChevronRight, Circle } from 'lucide-react';
+import { Home, Users, Upload, Settings, ChevronRight, Circle, UserCog } from 'lucide-react';
 import classNames from 'classnames';
+import { useUser } from '@/contexts/user-context';
 
 const VerticalMenu = ({ scrollMenu }: { scrollMenu: (container: any) => void }) => {
   const pathname = usePathname();
+  const { user } = useUser();
 
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: Home },
@@ -12,6 +14,11 @@ const VerticalMenu = ({ scrollMenu }: { scrollMenu: (container: any) => void }) 
     { href: '/import', label: 'Import Data', icon: Upload },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
+
+  // Add Users menu item for admin users only
+  if (user && user.role === 'admin') {
+    menuItems.splice(2, 0, { href: '/users', label: 'Users', icon: UserCog });
+  }
 
   return (
     <div 
