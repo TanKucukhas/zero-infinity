@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  
+  // Define public routes that don't require authentication
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
@@ -11,19 +13,20 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/logo") ||
-    pathname === "/robots.txt";
+    pathname.startsWith("/images") ||
+    pathname === "/robots.txt" ||
+    pathname === "/";
 
-  // For now, we'll allow access to dashboard pages
-  // In production, you should implement proper session management
+  // For protected routes, let the client-side handle authentication
+  // The dashboard layout will check for user authentication
   if (!isPublic) {
-    // Check if user is logged in via localStorage (client-side)
-    // This is a simple approach for demo purposes
+    // Check if it's a bot/crawler
     const userAgent = req.headers.get("user-agent") || "";
     const isBot = /bot|crawler|spider|crawling/i.test(userAgent);
     
-    if (!isBot) {
-      // Let the client-side handle authentication
-      return NextResponse.next();
+    if (isBot) {
+      // Allow bots to access public content only
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
