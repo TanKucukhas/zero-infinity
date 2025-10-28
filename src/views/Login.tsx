@@ -16,16 +16,6 @@ export default function Login() {
   const { theme, setTheme } = useTheme();
   const { setUser, user, isReady } = useUser();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!isReady) return;
-    
-    if (user) {
-      router.replace("/contacts");
-    }
-  }, [user, isReady, router]);
-
   // Show loading while checking auth status
   if (!isReady) {
     return (
