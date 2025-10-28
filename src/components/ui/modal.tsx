@@ -54,7 +54,7 @@ export default function Modal({ isOpen, onClose, children, className = "" }: Mod
       
       {/* Modal content */}
       <div 
-        className={`relative bg-white dark:bg-zinc-900 rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-200 ${className}`}
+        className={`relative bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full transform transition-all duration-200 ${className || 'max-w-md'}`}
         style={{ margin: '0 16px' }}
         onClick={(e) => e.stopPropagation()}
       >

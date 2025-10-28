@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { useNotifications } from "@/contexts/notification-context";
 import { NoPeopleEmptyState, NoSearchResultsEmptyState, ErrorEmptyState } from "@/components/empty-state";
 import ContactForm from "@/components/ContactForm";
+import ContactDetailDrawer from "@/components/ContactDetailDrawer";
 import { Company } from "@/components/companies/CompanySelect";
 
 type Person = {
@@ -92,6 +93,8 @@ export default function PeopleTable() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [showContactForm, setShowContactForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Person | null>(null);
+  const [showContactDetail, setShowContactDetail] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   
   const { addNotification } = useNotifications();
 
@@ -103,7 +106,7 @@ export default function PeopleTable() {
       
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pagination.limit.toString(),
+        limit: '20', // Fixed limit to avoid state issues
         search: searchTerm,
         priority: priorityFilter,
         assigned_to: assignedFilter,
@@ -195,6 +198,18 @@ export default function PeopleTable() {
     setPriorityFilter("all");
     setAssignedFilter("all");
     setContactedFilter("all");
+  };
+
+  // Handle contact detail view
+  const handleViewContact = (contactId: string) => {
+    setSelectedContactId(contactId);
+    setShowContactDetail(true);
+  };
+
+  // Handle close contact detail
+  const handleCloseContactDetail = () => {
+    setShowContactDetail(false);
+    setSelectedContactId(null);
   };
 
   // Handle stats click to filter
@@ -698,6 +713,7 @@ export default function PeopleTable() {
                           size="sm" 
                           className="h-7 w-7 p-0"
                           title="View"
+                          onClick={() => handleViewContact(person.id)}
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
@@ -802,6 +818,13 @@ export default function PeopleTable() {
           }
         } : undefined}
         title={editingContact ? "Edit Contact" : "Add Contact"}
+      />
+
+      {/* Contact Detail Drawer */}
+      <ContactDetailDrawer
+        open={showContactDetail}
+        onClose={handleCloseContactDetail}
+        contactId={selectedContactId}
       />
     </div>
   );
