@@ -8,6 +8,10 @@ const __dirname = path.dirname(__filename)
 const nextConfig = {
   reactStrictMode: true,
   basePath: process.env.BASEPATH,
+  output: 'standalone',
+  experimental: {
+    serverComponentsExternalPackages: ['@opennextjs/cloudflare']
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
