@@ -80,7 +80,8 @@ export async function GET(req: Request) {
         .select()
         .from(contacts)
         .leftJoin(companies, eq(companies.id, contacts.companyId))
-        .leftJoin(users, eq(users.id, contacts.assignedTo))
+        .leftJoin(contactAssignments, eq(contactAssignments.contactId, contacts.id))
+        .leftJoin(users, eq(users.id, contactAssignments.userId))
         .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
         .orderBy(desc(contacts.createdAt))
         .limit(limit)
@@ -120,7 +121,7 @@ export async function GET(req: Request) {
       companyName: r.companies?.name,
       companyWebsite: r.companies?.website,
       companyIndustry: r.companies?.industry,
-      assignedTo: r.contacts.assignedTo,
+      assignedTo: r.contactAssignments?.userId,
       assignedToName: r.users?.name,
       assignedToLastName: r.users?.lastName,
     }));
