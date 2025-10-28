@@ -1,6 +1,6 @@
 "use client";
 import * as React from 'react';
-import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from '@mui/material';
+import { Box, TextField, Autocomplete } from '@mui/material';
 
 type Country = { code: string; name: string };
 type State = { code: string; name: string };
@@ -24,7 +24,7 @@ export default function LocationSelect({ value, onChange }: Props) {
   const [states, setStates] = React.useState<State[]>([]);
   const [cities, setCities] = React.useState<City[]>([]);
 
-  const [countryCode, setCountryCode] = React.useState<string | ''>(value?.countryCode || '');
+  const [countryCode, setCountryCode] = React.useState<string | ''>(value?.countryCode || 'US');
   const [stateCode, setStateCode] = React.useState<string | ''>(value?.stateCode || '');
   const [cityId, setCityId] = React.useState<number | ''>(value?.cityId || '');
   const [stateText, setStateText] = React.useState<string>(value?.stateText || '');
@@ -66,70 +66,86 @@ export default function LocationSelect({ value, onChange }: Props) {
       stateCode: countryCode === 'US' ? (stateCode || null) : null,
       cityId: countryCode === 'US' ? (cityId === '' ? null : Number(cityId)) : null,
       stateText: countryCode !== 'US' ? (stateText || null) : null,
-      cityText: countryCode !== 'US' ? (cityText || null) : (countryCode === 'US' ? (cityText || null) : null)
+      cityText: countryCode !== 'US' ? (cityText || null) : null
     });
   }, [countryCode, stateCode, cityId, stateText, cityText]);
 
-  const onCountry = (e: SelectChangeEvent) => setCountryCode(e.target.value as string);
-  const onState = (e: SelectChangeEvent) => setStateCode(e.target.value as string);
-  const onCity = (e: SelectChangeEvent) => {
-    setCityId(Number(e.target.value));
-    if (e.target.value) {
-      setCityText(''); // Clear text input when selecting from dropdown
-    }
-  };
   const onStateText = (e: React.ChangeEvent<HTMLInputElement>) => setStateText(e.target.value);
-  const onCityText = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCityText(e.target.value);
-    if (e.target.value) {
-      setCityId(''); // Clear dropdown selection when typing
-    }
-  };
+  const onCityText = (e: React.ChangeEvent<HTMLInputElement>) => setCityText(e.target.value);
 
   return (
     <Box display="flex" gap={2} flexWrap="wrap">
-      <FormControl size="small" sx={{ minWidth: 180 }}>
-        <InputLabel id="country-label">Country</InputLabel>
-        <Select labelId="country-label" label="Country" value={countryCode} onChange={onCountry}>
-          <MenuItem value="">None</MenuItem>
-          {countries.map(c => (
-            <MenuItem key={c.code} value={c.code}>{c.name}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        size="small"
+        options={countries}
+        getOptionLabel={(option) => option.name}
+        value={countries.find(c => c.code === countryCode) || null}
+        onChange={(event, newValue) => {
+          setCountryCode(newValue?.code || '');
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Country"
+            placeholder="Select country"
+            sx={{ minWidth: 180 }}
+          />
+        )}
+        renderOption={(props, option) => (
+          <Box component="li" {...props}>
+            {option.name}
+          </Box>
+        )}
+      />
 
       {countryCode === 'US' && (
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel id="state-label">State</InputLabel>
-          <Select labelId="state-label" label="State" value={stateCode} onChange={onState}>
-            <MenuItem value="">None</MenuItem>
-            {states.map(s => (
-              <MenuItem key={s.code} value={s.code}>{s.name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          size="small"
+          options={states}
+          getOptionLabel={(option) => option.name}
+          value={states.find(s => s.code === stateCode) || null}
+          onChange={(event, newValue) => {
+            setStateCode(newValue?.code || '');
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="State"
+              placeholder="Select state"
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          renderOption={(props, option) => (
+            <Box component="li" {...props}>
+              {option.name}
+            </Box>
+          )}
+        />
       )}
 
       {countryCode === 'US' && stateCode && (
-        <Box display="flex" gap={1} alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel id="city-label">City</InputLabel>
-            <Select labelId="city-label" label="City" value={cityId === '' ? '' : String(cityId)} onChange={onCity}>
-              <MenuItem value="">None</MenuItem>
-              {cities.map(c => (
-                <MenuItem key={c.id} value={String(c.id)}>{c.city}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField
-            size="small"
-            label="Or type city"
-            value={cityText}
-            onChange={onCityText}
-            sx={{ minWidth: 180 }}
-            placeholder="Enter city name"
-          />
-        </Box>
+        <Autocomplete
+          size="small"
+          options={cities}
+          getOptionLabel={(option) => option.city}
+          value={cities.find(c => c.id === cityId) || null}
+          onChange={(event, newValue) => {
+            setCityId(newValue?.id || '');
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="City"
+              placeholder="Select city"
+              sx={{ minWidth: 180 }}
+            />
+          )}
+          renderOption={(props, option) => (
+            <Box component="li" {...props}>
+              {option.city}
+            </Box>
+          )}
+        />
       )}
 
       {countryCode && countryCode !== 'US' && (
