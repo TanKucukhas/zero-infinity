@@ -20,22 +20,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check localStorage for user data
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        localStorage.removeItem("user");
+    // Check localStorage for user data (only on client side)
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          localStorage.removeItem("user");
+        }
       }
     }
   }, []);
 
   const logout = () => {
-    localStorage.removeItem("user");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("user");
+    }
     setUser(null);
-    window.location.href = "/login";
+    if (typeof window !== 'undefined') {
+      window.location.href = "/login";
+    }
   };
 
   return (

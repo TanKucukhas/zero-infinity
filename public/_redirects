@@ -1,0 +1,13 @@
+# Cloudflare Pages redirects
+# Handle client-side routing
+/*    /index.html   200
+
+# API routes
+/api/*    /api/:splat    200
+
+# Static assets
+/_next/*    /_next/:splat    200
+/favicon.ico    /favicon.ico    200
+/robots.txt    /robots.txt    200
+/images/*    /images/:splat    200
+/logo/*    /logo/:splat    200

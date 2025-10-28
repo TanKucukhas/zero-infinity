@@ -10,6 +10,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/register") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/logo") ||
@@ -20,11 +21,12 @@ export function middleware(req: NextRequest) {
   // For protected routes, let the client-side handle authentication
   // The dashboard layout will check for user authentication
   if (!isPublic) {
-    // Check if it's a bot/crawler
+    // Check if it's a bot/crawler - only redirect if it's not a static asset
     const userAgent = req.headers.get("user-agent") || "";
     const isBot = /bot|crawler|spider|crawling/i.test(userAgent);
+    const isStaticAsset = pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/);
     
-    if (isBot) {
+    if (isBot && !isStaticAsset) {
       // Allow bots to access public content only
       return NextResponse.redirect(new URL("/", req.url));
     }
