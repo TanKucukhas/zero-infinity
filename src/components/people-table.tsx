@@ -940,15 +940,15 @@ export default function PeopleTable() {
             cityText: null
           },
           // Assignment bilgilerini ekle
-          assignedUsers: editingContact.assignedTo ? [{
-            id: 0, // API'den gelen assignedTo sadece string, ID yok
-            name: editingContact.assignedTo.split(' ')[0] || '',
-            lastName: editingContact.assignedTo.split(' ').slice(1).join(' ') || '',
+          assignedUsers: editingContact.assignedToName ? [{
+            id: editingContact.assignedTo || 0,
+            name: editingContact.assignedToName || '',
+            lastName: editingContact.assignedToLastName || '',
             email: '',
             role: 'viewer',
             status: 'active' as const
           }] : [],
-          assignedUserIds: editingContact.assignedTo ? [0] : []
+          assignedUserIds: editingContact.assignedTo ? [editingContact.assignedTo] : []
         } : undefined}
         title={editingContact ? "Edit Contact" : "Add Contact"}
       />
