@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCloudflareContext } from "@/server/cloudflare";
+
+export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,37 +17,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For demo purposes, simple hardcoded authentication
-    const validUsers = [
-      {
-        id: "admin-1",
-        email: "admin@zeroinfinity.com",
-        name: "Admin User",
-        role: "admin"
-      },
-      {
-        id: "user-1", 
-        email: "user@zeroinfinity.com",
-        name: "Regular User",
-        role: "viewer"
-      },
-      {
-        id: "user-2",
-        email: "tankucukhas@gmail.com",
-        name: "Tan Kucukhas",
-        role: "admin"
-      }
-    ];
+    // Get database connection
+    const { env } = getCloudflareContext();
 
-    const user = validUsers.find(u => u.email === email);
+    // Check if user exists in database
+    const userResult = await env.DB.prepare(`
+      SELECT id, name, last_name, email, role, status
+      FROM users 
+      WHERE email = ?
+    `).bind(email).first();
+
+    console.log("User found:", userResult);
     
-    console.log("User found:", user);
-    
-    if (!user) {
+    if (!userResult) {
       console.log("User not found for email:", email);
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
+      );
+    }
+
+    // Check if user is suspended
+    if (userResult.status === 'suspended') {
+      console.log("Suspended user attempted login:", email);
+      return NextResponse.json(
+        { error: "Your account has been suspended. Please contact an administrator." },
+        { status: 403 }
       );
     }
 
@@ -59,14 +57,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Return success with user data
-    console.log("Login successful for user:", user);
+    console.log("Login successful for user:", userResult);
     return NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
+        id: userResult.id,
+        email: userResult.email,
+        name: userResult.name,
+        lastName: userResult.last_name,
+        role: userResult.role,
+        status: userResult.status
       }
     });
 

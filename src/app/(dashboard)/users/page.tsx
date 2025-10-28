@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Modal from "@/components/ui/modal";
 import { useUser } from "@/contexts/user-context";
 import { useNotifications } from "@/contexts/notification-context";
 
@@ -26,6 +27,7 @@ type User = {
   lastName: string;
   email: string;
   role: string;
+  status: string;
   createdAt: number;
 };
 
@@ -47,7 +49,8 @@ export default function UsersPage() {
     name: '',
     lastName: '',
     email: '',
-    role: 'viewer'
+    role: 'viewer',
+    status: 'active'
   });
 
   // Check if user is admin
@@ -127,6 +130,18 @@ export default function UsersPage() {
     );
   });
 
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": 
+        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+      case "suspended": 
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+      default: 
+        return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
+    }
+  };
+
   // Get role badge color
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -138,10 +153,69 @@ export default function UsersPage() {
         return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
       case "external": 
         return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
-      case "suspended": 
-        return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
       default: 
         return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
+    }
+  };
+
+  // Handle edit user
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      name: user.name,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      status: user.status
+    });
+    setShowEditForm(true);
+    setShowActionsMenu(null);
+  };
+
+  // Handle form submission for edit
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingUser) return;
+    
+    try {
+      const response = await fetch(`/api/users?id=${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user': JSON.stringify(user)
+        },
+        body: JSON.stringify({
+          action: 'update',
+          ...formData
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        addNotification({
+          type: "success",
+          title: "User Updated",
+          message: "User has been updated successfully",
+        });
+        setShowEditForm(false);
+        setEditingUser(null);
+        setFormData({ name: '', lastName: '', email: '', role: 'viewer', status: 'active' });
+        fetchUsers();
+      } else {
+        addNotification({
+          type: "error",
+          title: "Error",
+          message: result.error || "Failed to update user",
+        });
+      }
+    } catch (error) {
+      addNotification({
+        type: "error",
+        title: "Error",
+        message: "Network error occurred",
+      });
     }
   };
 
@@ -168,7 +242,7 @@ export default function UsersPage() {
           message: "User has been created successfully",
         });
         setShowAddForm(false);
-        setFormData({ name: '', lastName: '', email: '', role: 'viewer' });
+        setFormData({ name: '', lastName: '', email: '', role: 'viewer', status: 'active' });
         fetchUsers();
       } else {
         addNotification({
@@ -366,6 +440,9 @@ export default function UsersPage() {
                   Role
                 </th>
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                   Created At
                 </th>
                 <th className="px-4 py-2.5 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -376,7 +453,7 @@ export default function UsersPage() {
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
+                  <td colSpan={6} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
                     {searchTerm ? "No users found matching your search." : "No users found."}
                   </td>
                 </tr>
@@ -420,6 +497,12 @@ export default function UsersPage() {
                     </td>
                     
                     <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(userItem.status)}`}>
+                        {userItem.status.toUpperCase()}
+                      </span>
+                    </td>
+                    
+                    <td className="px-4 py-3">
                       <div className="flex items-center text-sm text-zinc-600 dark:text-zinc-400">
                         <Calendar className="h-3 w-3 mr-1.5 flex-shrink-0" />
                         <span>{formatDate(userItem.createdAt)}</span>
@@ -444,7 +527,17 @@ export default function UsersPage() {
                         {showActionsMenu === userItem.id && (
                           <div className="absolute right-0 top-8 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg py-1 z-50"
                                onClick={(e) => e.stopPropagation()}>
-                            {userItem.role === 'suspended' ? (
+                            <button
+                              onClick={() => {
+                                handleEditUser(userItem);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit User
+                            </button>
+                            
+                            {userItem.status === 'suspended' ? (
                               <button
                                 onClick={() => {
                                   handleSuspendUser(userItem.id, 'activate');
@@ -492,10 +585,24 @@ export default function UsersPage() {
 
       {/* Stats */}
       {users.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
             <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{users.length}</div>
             <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Total Users</div>
+          </div>
+          
+          <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {users.filter(u => u.status === 'active').length}
+            </div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Active</div>
+          </div>
+          
+          <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              {users.filter(u => u.status === 'suspended').length}
+            </div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Suspended</div>
           </div>
           
           <div className="p-4 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
@@ -522,95 +629,225 @@ export default function UsersPage() {
       )}
 
       {/* Add User Modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                Add New User
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAddForm(false)}
-                className="h-8 w-8 p-0"
-              >
-                ×
-              </Button>
+      <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)}>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Add New User
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAddForm(false)}
+              className="h-8 w-8 p-0"
+            >
+              ×
+            </Button>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                First Name *
+              </label>
+              <Input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                placeholder="Enter first name"
+              />
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  First Name *
-                </label>
-                <Input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  placeholder="Enter first name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Last Name
-                </label>
-                <Input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Enter last name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Email *
-                </label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  placeholder="Enter email address"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Role
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                >
-                  <option value="viewer">Viewer</option>
-                  <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                  <option value="external">External</option>
-                </select>
-              </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" variant="primary" className="flex-1">
-                  Create User
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Last Name
+              </label>
+              <Input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder="Enter last name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Email *
+              </label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                placeholder="Enter email address"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Role
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+                <option value="external">External</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" variant="primary" className="flex-1">
+                Create User
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowAddForm(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
         </div>
-      )}
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal 
+        isOpen={showEditForm && editingUser !== null} 
+        onClose={() => {
+          setShowEditForm(false);
+          setEditingUser(null);
+          setFormData({ name: '', lastName: '', email: '', role: 'viewer', status: 'active' });
+        }}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Edit User: {editingUser?.name} {editingUser?.lastName}
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowEditForm(false);
+                setEditingUser(null);
+                setFormData({ name: '', lastName: '', email: '', role: 'viewer', status: 'active' });
+              }}
+              className="h-8 w-8 p-0"
+            >
+              ×
+            </Button>
+          </div>
+          
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                First Name *
+              </label>
+              <Input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                placeholder="Enter first name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Last Name
+              </label>
+              <Input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder="Enter last name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Email *
+              </label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                placeholder="Enter email address"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Role
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+              >
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+                <option value="external">External</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" variant="primary" className="flex-1">
+                Update User
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowEditForm(false);
+                  setEditingUser(null);
+                  setFormData({ name: '', lastName: '', email: '', role: 'viewer', status: 'active' });
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 }

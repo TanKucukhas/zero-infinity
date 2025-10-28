@@ -39,6 +39,7 @@ export async function GET(req: Request) {
         last_name,
         email,
         role,
+        status,
         created_at
       FROM users
       ORDER BY created_at DESC
@@ -50,6 +51,7 @@ export async function GET(req: Request) {
       lastName: r.last_name || '',
       email: r.email || '',
       role: r.role || 'viewer',
+      status: r.status || 'active',
       createdAt: r.created_at
     }));
 
@@ -108,9 +110,9 @@ export async function POST(req: Request) {
 
     // Create new user
     const result = await env.DB.prepare(`
-      INSERT INTO users (name, last_name, email, role, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(name, lastName || '', email, role, Date.now()).run();
+      INSERT INTO users (name, last_name, email, role, status, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(name, lastName || '', email, role, 'active', Date.now()).run();
 
     return Response.json({
       success: true,
@@ -209,7 +211,7 @@ export async function PUT(req: Request) {
     const url = new URL(req.url);
     const userId = url.searchParams.get('id');
     const body = await req.json();
-    const { action, role } = body;
+    const { action, role, name, lastName, email, status } = body;
 
     if (!userId) {
       return Response.json(
@@ -242,12 +244,34 @@ export async function PUT(req: Request) {
     let bindValues: any[] = [];
 
     if (action === 'suspend') {
-      // For now, we'll use role change to 'suspended'
-      updateQuery = 'UPDATE users SET role = ? WHERE id = ?';
+      updateQuery = 'UPDATE users SET status = ? WHERE id = ?';
       bindValues = ['suspended', userId];
     } else if (action === 'activate') {
-      updateQuery = 'UPDATE users SET role = ? WHERE id = ?';
-      bindValues = ['viewer', userId];
+      updateQuery = 'UPDATE users SET status = ? WHERE id = ?';
+      bindValues = ['active', userId];
+    } else if (action === 'update') {
+      // Update user with new data
+      if (!name || !email) {
+        return Response.json(
+          { error: "Name and email are required for update" },
+          { status: 400 }
+        );
+      }
+      
+      // Check if email already exists for another user
+      const existingUser = await env.DB.prepare(`
+        SELECT id FROM users WHERE email = ? AND id != ?
+      `).bind(email, userId).first();
+
+      if (existingUser) {
+        return Response.json(
+          { error: "Email already exists for another user" },
+          { status: 409 }
+        );
+      }
+      
+      updateQuery = 'UPDATE users SET name = ?, last_name = ?, email = ?, role = ?, status = ? WHERE id = ?';
+      bindValues = [name, lastName || '', email, role || 'viewer', status || 'active', userId];
     } else if (role) {
       updateQuery = 'UPDATE users SET role = ? WHERE id = ?';
       bindValues = [role, userId];
