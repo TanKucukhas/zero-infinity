@@ -16,7 +16,8 @@ import {
   Paper,
   Stepper,
   Step,
-  StepLabel
+  StepLabel,
+  Slider
 } from '@mui/material';
 import Modal from '@/components/ui/modal';
 import { 
@@ -56,6 +57,8 @@ type ContactFormData = {
   assignedToUserId?: number;
   relationshipType?: string;
   relationshipStrength?: number;
+  relationshipWith?: 'internal_user' | 'external_contact' | 'internal_contact';
+  relatedContactId?: number;
 };
 
 type Props = {
@@ -68,9 +71,10 @@ type Props = {
 
 const steps = [
   'Basic Information',
-  'Social Media',
-  'Priority & Biography', 
-  'Assignment & Relationships'
+  'Company & Social Media',
+  'Biography & Flags', 
+  'Relationships',
+  'Assignment'
 ];
 
 export default function ContactForm({ open, onClose, onSave, initialData, title = "Add Contact" }: Props) {
@@ -103,7 +107,9 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
     },
     assignedToUserId: undefined,
     relationshipType: 'custom',
-    relationshipStrength: undefined,
+    relationshipStrength: 5,
+    relationshipWith: undefined,
+    relatedContactId: undefined,
     ...initialData
   });
 
@@ -277,10 +283,11 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Company Information</h2>
-              <p className="text-zinc-600">Add company details and professional information</p>
+              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Company & Social Media</h2>
+              <p className="text-zinc-600">Add company details and social media profiles</p>
             </div>
             
+            {/* Company Section */}
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
@@ -347,201 +354,300 @@ export default function ContactForm({ open, onClose, onSave, initialData, title 
                 </div>
               )}
             </div>
-          </div>
-        );
-        
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Social Media Links</h2>
-              <p className="text-zinc-600">Add their social media presence and online profiles</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <LinkedinLogo size={16} className="text-blue-600" />
-                  LinkedIn
-                </label>
-                <input
-                  type="url"
-                  value={formData.linkedin}
-                  onChange={handleChange('linkedin')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://linkedin.com/in/username"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <FacebookLogo size={16} className="text-blue-700" />
-                  Facebook
-                </label>
-                <input
-                  type="url"
-                  value={formData.facebook}
-                  onChange={handleChange('facebook')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://facebook.com/username"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <InstagramLogo size={16} className="text-pink-600" />
-                  Instagram
-                </label>
-                <input
-                  type="url"
-                  value={formData.instagram}
-                  onChange={handleChange('instagram')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://instagram.com/username"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <Play size={16} className="text-orange-600" />
-                  IMDB
-                </label>
-                <input
-                  type="url"
-                  value={formData.imdb}
-                  onChange={handleChange('imdb')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://imdb.com/name/nm123456"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
-                  <BookOpen size={16} className="text-green-600" />
-                  Wikipedia
-                </label>
-                <input
-                  type="url"
-                  value={formData.wikipedia}
-                  onChange={handleChange('wikipedia')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="https://en.wikipedia.org/wiki/Name"
-                />
-              </div>
-            </div>
-          </div>
-        );
-        
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Flags & Biography</h2>
-              <p className="text-zinc-600">Set flags and add biographical information</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-zinc-700">Flags</label>
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3">
+
+            {/* Social Media Section */}
+            <div className="space-y-6">
+              <div className="border-t border-zinc-200 pt-6">
+                <h3 className="text-lg font-semibold text-zinc-800 mb-4">Social Media Links</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
+                      <LinkedinLogo size={16} className="text-blue-600" />
+                      LinkedIn
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={formData.seenFilm}
-                      onChange={handleCheckboxChange('seenFilm')}
-                      className="w-5 h-5 text-brand-600 border-zinc-300 rounded focus:ring-brand-500"
+                      type="url"
+                      value={formData.linkedin}
+                      onChange={handleChange('linkedin')}
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                      placeholder="https://linkedin.com/in/username"
                     />
-                    <span className="text-sm font-medium text-zinc-700">Seen Film</span>
-                  </label>
+                  </div>
                   
-                  <label className="flex items-center space-x-3">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
+                      <FacebookLogo size={16} className="text-blue-700" />
+                      Facebook
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={formData.docBranchMember}
-                      onChange={handleCheckboxChange('docBranchMember')}
-                      className="w-5 h-5 text-brand-600 border-zinc-300 rounded focus:ring-brand-500"
+                      type="url"
+                      value={formData.facebook}
+                      onChange={handleChange('facebook')}
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                      placeholder="https://facebook.com/username"
                     />
-                    <span className="text-sm font-medium text-zinc-700">Doc Branch Member</span>
-                  </label>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
+                      <InstagramLogo size={16} className="text-pink-600" />
+                      Instagram
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.instagram}
+                      onChange={handleChange('instagram')}
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                      placeholder="https://instagram.com/username"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
+                      <Play size={16} className="text-orange-600" />
+                      IMDB
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.imdb}
+                      onChange={handleChange('imdb')}
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                      placeholder="https://imdb.com/name/nm123456"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-zinc-700 flex items-center gap-2">
+                      <BookOpen size={16} className="text-green-600" />
+                      Wikipedia
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.wikipedia}
+                      onChange={handleChange('wikipedia')}
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                      placeholder="https://en.wikipedia.org/wiki/Name"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
+        );
+        
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Biography & Flags</h2>
+              <p className="text-zinc-600">Add biographical information and set contact flags</p>
+            </div>
             
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-700">Biography</label>
-              <textarea
-                value={formData.biography}
-                onChange={handleChange('biography')}
-                rows={4}
-                className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200 resize-none"
-                placeholder="Enter biographical information..."
-              />
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-zinc-700">Biography</label>
+                <textarea
+                  value={formData.biography}
+                  onChange={handleChange('biography')}
+                  rows={6}
+                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200 resize-none"
+                  placeholder="Enter biographical information about this contact..."
+                />
+              </div>
+              
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-zinc-700">Contact Flags</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-zinc-50 rounded-lg p-4">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.seenFilm}
+                        onChange={handleCheckboxChange('seenFilm')}
+                        className="w-5 h-5 text-brand-600 border-zinc-300 rounded focus:ring-brand-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-zinc-700">Seen Film</span>
+                        <p className="text-xs text-zinc-500">Contact has seen our film</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  <div className="bg-zinc-50 rounded-lg p-4">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.docBranchMember}
+                        onChange={handleCheckboxChange('docBranchMember')}
+                        className="w-5 h-5 text-brand-600 border-zinc-300 rounded focus:ring-brand-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-zinc-700">Doc Branch Member</span>
+                        <p className="text-xs text-zinc-500">Member of documentary branch</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
         
       case 3:
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Priority & Assignment</h2>
-              <p className="text-zinc-600">Set priority level, assign contact and set relationship details</p>
+              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Relationships</h2>
+              <p className="text-zinc-600">Define relationship details and connections</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">Priority Level</label>
-                <select
-                  value={formData.priority}
-                  onChange={handleChange('priority')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </div>
+            {/* Relationship Section */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Relationship Details
+              </h3>
               
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">Relationship Type</label>
-                <select
-                  value={formData.relationshipType || 'custom'}
-                  onChange={handleChange('relationshipType')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                >
-                  <option value="surface_level">Surface Level</option>
-                  <option value="mentor">Mentor</option>
-                  <option value="supporter">Supporter</option>
-                  <option value="colleague">Colleague</option>
-                  <option value="friend">Friend</option>
-                  <option value="exec">Executive</option>
-                  <option value="custom">Custom</option>
-                </select>
+              <div className="space-y-6">
+                {/* Relationship With */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-zinc-700">Relationship With</label>
+                  <select
+                    value={formData.relationshipWith || ''}
+                    onChange={handleChange('relationshipWith')}
+                    className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                  >
+                    <option value="">Select relationship type</option>
+                    <option value="internal_user">Internal User</option>
+                    <option value="external_contact">External Contact</option>
+                    <option value="internal_contact">Internal Contact</option>
+                  </select>
+                  <p className="text-xs text-zinc-500">Choose who this contact has a relationship with</p>
+                </div>
+
+                {/* Relationship Type */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-zinc-700">Relationship Type</label>
+                  <select
+                    value={formData.relationshipType || 'custom'}
+                    onChange={handleChange('relationshipType')}
+                    className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                  >
+                    <option value="surface_level">Surface Level</option>
+                    <option value="mentor">Mentor</option>
+                    <option value="supporter">Supporter</option>
+                    <option value="colleague">Colleague</option>
+                    <option value="friend">Friend</option>
+                    <option value="exec">Executive</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                  <p className="text-xs text-zinc-500">Define the nature of the relationship</p>
+                </div>
+
+                {/* Relationship Strength Slider */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-zinc-700">
+                    Relationship Strength: {formData.relationshipStrength || 5}/10
+                  </label>
+                  <div className="px-2">
+                    <Slider
+                      value={formData.relationshipStrength || 5}
+                      onChange={(_, value) => setFormData(prev => ({ ...prev, relationshipStrength: value as number }))}
+                      min={1}
+                      max={10}
+                      step={1}
+                      marks={[
+                        { value: 1, label: '1' },
+                        { value: 5, label: '5' },
+                        { value: 10, label: '10' }
+                      ]}
+                      className="text-brand-600"
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>Weak</span>
+                    <span>Strong</span>
+                  </div>
+                  <p className="text-xs text-zinc-500">Rate the strength of this relationship</p>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">Relationship Strength (1-10)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.relationshipStrength || ''}
-                  onChange={handleChange('relationshipStrength')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="Rate relationship strength"
-                />
+            </div>
+          </div>
+        );
+        
+      case 4:
+        return (
+          <div className="space-y-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-zinc-800 mb-2">Assignment</h2>
+              <p className="text-zinc-600">Set priority level and assign contact to team members</p>
+            </div>
+            
+            {/* Priority Level Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Priority Level
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { value: 'LOW', label: 'Low', color: 'bg-green-100 text-green-800 border-green-200' },
+                  { value: 'MEDIUM', label: 'Medium', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+                  { value: 'HIGH', label: 'High', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+                  { value: 'NONE', label: 'None', color: 'bg-gray-100 text-gray-800 border-gray-200' }
+                ].map((option) => (
+                  <label key={option.value} className={`cursor-pointer rounded-lg border-2 p-4 text-center transition-all duration-200 hover:shadow-md ${formData.priority === option.value ? option.color + ' border-opacity-100' : 'bg-white border-zinc-200 hover:border-zinc-300'}`}>
+                    <input
+                      type="radio"
+                      name="priority"
+                      value={option.value}
+                      checked={formData.priority === option.value}
+                      onChange={handleChange('priority')}
+                      className="sr-only"
+                    />
+                    <div className="font-medium">{option.label}</div>
+                  </label>
+                ))}
               </div>
+              <p className="text-xs text-zinc-500 mt-3">Set the priority level for this contact</p>
+            </div>
+
+            {/* Assignment Section */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Assign Contact
+              </h3>
               
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">Assigned To User ID</label>
-                <input
-                  type="number"
-                  value={formData.assignedToUserId || ''}
-                  onChange={handleChange('assignedToUserId')}
-                  className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
-                  placeholder="Enter user ID"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-zinc-700">Assigned To User ID</label>
+                  <input
+                    type="number"
+                    value={formData.assignedToUserId || ''}
+                    onChange={handleChange('assignedToUserId')}
+                    className="w-full px-4 py-3 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all duration-200"
+                    placeholder="Enter user ID to assign this contact"
+                  />
+                  <p className="text-xs text-zinc-500">Assign this contact to a system user for management and follow-up</p>
+                </div>
+                
+                {/* Assignment Status */}
+                <div className="bg-white rounded-lg border border-zinc-200 p-4">
+                  <h4 className="font-medium text-zinc-800 mb-2">Assignment Status</h4>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${formData.assignedToUserId ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <span className="text-sm text-zinc-600">
+                      {formData.assignedToUserId ? 'Contact is assigned' : 'Contact is unassigned'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -187,6 +187,10 @@ export default function CompanySelect({
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
         options={optionsWithAddNew}
+        getOptionKey={(option) => {
+          if (option.isAddNew) return 'add-new';
+          return option.id?.toString() || '';
+        }}
         getOptionLabel={(option) => {
           if (option.isAddNew) return '';
           return option.name || '';

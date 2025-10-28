@@ -12,7 +12,7 @@ export default function CompaniesPage() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/companies');
+      const response = await fetch('/api/companies?limit=100');
       const data = await response.json();
       
       if (data.success) {
