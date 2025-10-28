@@ -43,6 +43,8 @@ cloudflare-env.d.ts
 .vscode/
 *.log
 .cursor/
+/backups/
+/backups/*
 
 # OpenNext
 /.open-next

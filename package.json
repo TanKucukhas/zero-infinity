@@ -25,6 +25,7 @@
 		"db:seed:locations": "tsx scripts/seed_locations.ts",
 		"db:import:csv": "tsx scripts/import_clean_csv.ts",
 		"db:ensure:columns": "tsx scripts/ensure_phone_number_column.ts",
+		"db:deploy:local-to-prod": "tsx scripts/deploy_local_to_prod.ts",
 		"deploy:prod": "tsx scripts/deploy_prod.ts"
 	},
 	"dependencies": {

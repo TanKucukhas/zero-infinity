@@ -24,7 +24,10 @@
 	"routes": [
 		{ "pattern": "app.zeroinfinity.ai/*", "zone_name": "zeroinfinity.ai" }
 	],
-	"vars": { "NODE_ENV": "production" }
+	"vars": { 
+		"NODE_ENV": "production",
+		"DB_SOURCE": "prod"
+	}
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
