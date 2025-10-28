@@ -3,20 +3,48 @@ import { useState, useEffect } from 'react';
 import { Company } from '@/components/companies/CompanySelect';
 import CompaniesTable from '@/components/companies/CompaniesTable';
 import TableContainer from '@/components/ui/TableContainer';
+import { Button } from '@/components/ui/button';
+
+type PaginationInfo = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = async (page = 1, search = '') => {
     try {
       setLoading(true);
-      const response = await fetch('/api/companies?limit=100');
+      setError(null);
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+        ...(search && { search })
+      });
+
+      const response = await fetch(`/api/companies?${params}`);
       const data = await response.json();
       
       if (data.success) {
         setCompanies(data.data);
+        setPagination(data.pagination);
       } else {
         setError(data.error || 'Failed to fetch companies');
       }
@@ -28,15 +56,32 @@ export default function CompaniesPage() {
   };
 
   useEffect(() => {
-    fetchCompanies();
+    fetchCompanies(1, searchTerm);
   }, []);
 
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCompanies(1, searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handlePageChange = (newPage: number) => {
+    fetchCompanies(newPage, searchTerm);
+  };
+
   const handleCompanyUpdated = () => {
-    fetchCompanies(); // Refresh the list
+    fetchCompanies(pagination.page, searchTerm);
   };
 
   const handleCompanyDeleted = () => {
-    fetchCompanies(); // Refresh the list
+    fetchCompanies(pagination.page, searchTerm);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
   };
 
   if (loading) {
@@ -55,7 +100,7 @@ export default function CompaniesPage() {
         <div className="text-center py-8">
           <p className="text-red-600 mb-4">Error: {error}</p>
           <button 
-            onClick={fetchCompanies}
+            onClick={() => fetchCompanies()}
             className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
           >
             Try Again
@@ -72,11 +117,15 @@ export default function CompaniesPage() {
       count={companies.length}
       countLabel="companies"
     >
-      <CompaniesTable 
-        companies={companies}
-        onCompanyUpdated={handleCompanyUpdated}
-        onCompanyDeleted={handleCompanyDeleted}
-      />
+        <CompaniesTable 
+          companies={companies}
+          pagination={pagination}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onPageChange={handlePageChange}
+          onCompanyUpdated={handleCompanyUpdated}
+          onCompanyDeleted={handleCompanyDeleted}
+        />
     </TableContainer>
   );
 }

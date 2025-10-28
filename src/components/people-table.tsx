@@ -762,20 +762,98 @@ export default function PeopleTable() {
             </Button>
             
             <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const page = i + 1;
-                return (
-                  <Button
-                    key={page}
-                    variant={pagination.page === page ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(page)}
-                    className="w-8 h-8 p-0"
-                  >
-                    {page}
-                  </Button>
-                );
-              })}
+              {(() => {
+                const totalPages = pagination.totalPages;
+                const currentPage = pagination.page;
+                const maxVisible = 7; // Show up to 7 page numbers
+                
+                if (totalPages <= maxVisible) {
+                  // Show all pages if total is small
+                  return Array.from({ length: totalPages }, (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  });
+                } else {
+                  // Show smart pagination with ellipsis
+                  const pages = [];
+                  
+                  // Always show first page
+                  pages.push(
+                    <Button
+                      key={1}
+                      variant={currentPage === 1 ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(1)}
+                      className="w-8 h-8 p-0"
+                    >
+                      1
+                    </Button>
+                  );
+                  
+                  if (currentPage > 3) {
+                    pages.push(
+                      <span key="ellipsis1" className="px-2 text-zinc-500">
+                        ...
+                      </span>
+                    );
+                  }
+                  
+                  // Show pages around current page
+                  const start = Math.max(2, currentPage - 1);
+                  const end = Math.min(totalPages - 1, currentPage + 1);
+                  
+                  for (let page = start; page <= end; page++) {
+                    if (page !== 1 && page !== totalPages) {
+                      pages.push(
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      );
+                    }
+                  }
+                  
+                  if (currentPage < totalPages - 2) {
+                    pages.push(
+                      <span key="ellipsis2" className="px-2 text-zinc-500">
+                        ...
+                      </span>
+                    );
+                  }
+                  
+                  // Always show last page
+                  if (totalPages > 1) {
+                    pages.push(
+                      <Button
+                        key={totalPages}
+                        variant={currentPage === totalPages ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {totalPages}
+                      </Button>
+                    );
+                  }
+                  
+                  return pages;
+                }
+              })()}
             </div>
             
             <Button

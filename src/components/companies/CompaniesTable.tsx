@@ -15,30 +15,39 @@ import {
   Plus
 } from 'phosphor-react';
 
+type PaginationInfo = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
 type CompaniesTableProps = {
   companies: Company[];
+  pagination: PaginationInfo;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  onPageChange: (page: number) => void;
   onCompanyUpdated: () => void;
   onCompanyDeleted: () => void;
 };
 
 export default function CompaniesTable({ 
   companies, 
+  pagination,
+  searchTerm,
+  onSearchChange,
+  onPageChange,
   onCompanyUpdated, 
   onCompanyDeleted 
 }: CompaniesTableProps) {
   const { addNotification } = useNotifications();
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-
-  // Filter companies based on search term
-  const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.website?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleEdit = (company: Company) => {
     setSelectedCompany(company);
@@ -114,7 +123,7 @@ export default function CompaniesTable({
             type="text"
             placeholder="Search companies..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
           />
         </div>
@@ -151,7 +160,7 @@ export default function CompaniesTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
-              {filteredCompanies.map((company) => (
+              {companies.map((company) => (
                 <tr key={company.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -226,7 +235,7 @@ export default function CompaniesTable({
           </table>
         </div>
 
-        {filteredCompanies.length === 0 && (
+        {companies.length === 0 && (
           <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
             {searchTerm ? 'No companies found matching your search.' : 'No companies found.'}
           </div>
@@ -327,6 +336,52 @@ export default function CompaniesTable({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-zinc-600 dark:text-zinc-400">
+            {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} companies
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={!pagination.hasPrev}
+              className="px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => onPageChange(page)}
+                    className={`w-8 h-8 text-sm rounded-lg ${
+                      pagination.page === page
+                        ? 'bg-brand-600 text-white'
+                        : 'border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={!pagination.hasNext}
+              className="px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
           </div>
         </div>
       )}

@@ -1,115 +1,290 @@
 export const runtime = "edge";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getCloudflareContext } from "@/server/cloudflare";
+import { getDb } from "@/server/db";
+import { contacts, companies, users } from "@/server/db/schema";
+import { eq, like, sql, desc, and } from "drizzle-orm";
 
 // GET /api/contacts
-// Supports: page, limit, search, priority, contacted
+// Supports: page, limit, search, priority
 export async function GET(req: Request) {
-  const { env } = getCloudflareContext();
-  const url = new URL(req.url);
-  const page = parseInt(url.searchParams.get('page') || '1', 10);
-  const limit = parseInt(url.searchParams.get('limit') || '20', 10);
-  const search = (url.searchParams.get('search') || '').trim().toLowerCase();
-  const priority = (url.searchParams.get('priority') || '').toUpperCase();
-  const contacted = (url.searchParams.get('contacted') || '').toLowerCase(); // 'true' | 'false' | ''
-
-  const where: string[] = [];
-  const binds: any[] = [];
-
-  if (search) {
-    where.push(`(LOWER(first_name) LIKE ?1 OR LOWER(last_name) LIKE ?1 OR LOWER(email_primary) LIKE ?1 OR LOWER(company_name) LIKE ?1)`);
-    binds.push(`%${search}%`);
-  }
-  if (priority && priority !== 'ALL') {
-    where.push(`priority = ?${binds.length + 1}`);
-    binds.push(priority);
-  }
-  if (contacted && contacted !== 'all') {
-    if (contacted === 'true') {
-      where.push(`last_outreach_at IS NOT NULL`);
-    } else if (contacted === 'false') {
-      where.push(`last_outreach_at IS NULL`);
+  try {
+    // For development, return mock data
+    if (process.env.NODE_ENV === 'development') {
+      return Response.json({
+        success: true,
+        data: [
+          {
+            id: "1",
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@example.com",
+            secondEmail: "",
+            company: {
+              id: 1,
+              name: "Example Corp",
+              website: "https://example.com",
+              industry: "Technology",
+              size: "50-200",
+              description: "A technology company",
+              logoUrl: null,
+              headquarters: {
+                countryCode: "US",
+                stateCode: "CA",
+                cityId: 1,
+                countryName: "United States",
+                stateName: "California",
+                cityName: "San Francisco"
+              },
+              createdAt: new Date(),
+              updatedAt: new Date()
+            },
+            linkedin: "https://linkedin.com/in/johndoe",
+            facebook: "",
+            instagram: "",
+            imdb: "",
+            wikipedia: "",
+            priority: "MEDIUM",
+            assignedTo: "",
+            contacted: false,
+            location: "San Francisco, CA",
+            fullName: "John Doe",
+            seenFilm: false,
+            docBranchMember: false,
+            biography: "Software engineer with 5 years of experience",
+            phoneNumber: "+1234567890",
+            isActive: true,
+            inactiveReason: null,
+            inactiveAt: null,
+            createdAt: new Date()
+          },
+          {
+            id: "2",
+            firstName: "Jane",
+            lastName: "Smith",
+            email: "jane.smith@example.com",
+            secondEmail: "",
+            company: {
+              id: 2,
+              name: "Tech Solutions Inc",
+              website: "https://techsolutions.com",
+              industry: "Software",
+              size: "10-50",
+              description: "Software development company",
+              logoUrl: null,
+              headquarters: {
+                countryCode: "US",
+                stateCode: "NY",
+                cityId: 2,
+                countryName: "United States",
+                stateName: "New York",
+                cityName: "New York"
+              },
+              createdAt: new Date(),
+              updatedAt: new Date()
+            },
+            linkedin: "https://linkedin.com/in/janesmith",
+            facebook: "",
+            instagram: "",
+            imdb: "",
+            wikipedia: "",
+            priority: "HIGH",
+            assignedTo: "",
+            contacted: true,
+            location: "New York, NY",
+            fullName: "Jane Smith",
+            seenFilm: true,
+            docBranchMember: true,
+            biography: "Product manager with expertise in agile methodologies",
+            phoneNumber: "+1987654321",
+            isActive: true,
+            inactiveReason: null,
+            inactiveAt: null,
+            createdAt: new Date()
+          }
+        ],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 2,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
+        }
+      });
     }
-  }
+    
+    const { env } = getCloudflareContext();
+    console.log("Cloudflare context obtained");
+    const db = getDb(env);
+    console.log("Database connection obtained");
+    const url = new URL(req.url);
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+    const priority = (url.searchParams.get('priority') || '').toUpperCase();
 
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-
-  // Count total
-  const countRow = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts_flat ${whereSql}`)
-    .bind(...binds).first();
-  const total = Number(countRow?.cnt || 0);
-  const totalPages = Math.ceil(total / limit) || 1;
-  const offset = (page - 1) * limit;
-
-  const rows = await env.DB.prepare(`
-    SELECT * FROM contacts_flat
-    ${whereSql}
-    ORDER BY COALESCE(last_outreach_at, 0) DESC, created_at DESC
-    LIMIT ?${binds.length + 1} OFFSET ?${binds.length + 2}
-  `).bind(...binds, limit, offset).all();
-
-  const data = (rows?.results || []).map((r: any) => {
-    const fullName = `${r.first_name || ''} ${r.last_name || ''}`.trim();
-    const locParts = [r.city_name, r.state_name || r.city_state_code, r.country_name].filter(Boolean);
-    const location = locParts.join(', ');
-    return {
-      id: String(r.id),
-      firstName: r.first_name || '',
-      lastName: r.last_name || '',
-      email: r.email_primary || '',
-      secondEmail: r.email_secondary || '',
-      company: {
-        id: r.company_id,
-        name: r.company_name || '',
-        website: r.company_website || '',
-        linkedinUrl: r.company_linkedin || '',
-        industry: r.company_industry || '',
-        size: r.company_size || '',
-        description: r.company_description || '',
-        logoUrl: r.company_logo_url || ''
-      },
-      linkedin: r.linkedin || '',
-      facebook: r.facebook || '',
-      instagram: r.instagram || '',
-      imdb: r.imdb || '',
-      wikipedia: r.wikipedia || '',
-      priority: r.priority || 'NONE',
-      assignedTo: r.assigned_user_names || '',
-      contacted: !!r.last_outreach_at,
-      location,
-      fullName,
-      seenFilm: !!r.seen_film,
-      docBranchMember: !!r.doc_branch_member,
-      isActive: !!r.is_active,
-      createdAt: r.created_at
-    };
-  });
-
-  // Stats
-  const contactedCountRow = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts_flat WHERE last_outreach_at IS NOT NULL`).first();
-  const highPriority = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts WHERE priority='HIGH'`).first();
-  const mediumPriority = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts WHERE priority='MEDIUM'`).first();
-  const lowPriority = await env.DB.prepare(`SELECT COUNT(1) as cnt FROM contacts WHERE priority='LOW'`).first();
-  const companies = await env.DB.prepare(`SELECT COUNT(DISTINCT company_id) as cnt FROM contacts WHERE company_id IS NOT NULL`).first();
-
-  return Response.json({
-    success: true,
-    data,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext: page < totalPages,
-      hasPrev: page > 1
-    },
-    stats: {
-      totalPeople: total,
-      totalCompanies: Number(companies?.cnt || 0),
-      contacted: Number(contactedCountRow?.cnt || 0),
-      notContacted: total - Number(contactedCountRow?.cnt || 0),
-      highPriority: Number(highPriority?.cnt || 0),
-      mediumPriority: Number(mediumPriority?.cnt || 0),
-      lowPriority: Number(lowPriority?.cnt || 0)
+    // Build where conditions
+    const whereConditions = [];
+    
+    if (search) {
+      whereConditions.push(
+        sql`(LOWER(${contacts.firstName}) LIKE ${`%${search}%`} OR 
+             LOWER(${contacts.lastName}) LIKE ${`%${search}%`} OR 
+             LOWER(${contacts.emailPrimary}) LIKE ${`%${search}%`})`
+      );
     }
-  });
+    
+    if (priority && priority !== 'ALL') {
+      whereConditions.push(eq(contacts.priority, priority as 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'));
+    }
+
+    // Count total
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(contacts)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+
+    const total = countResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const offset = (page - 1) * limit;
+
+    // Get contacts with company data
+    const rows = await db
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        emailPrimary: contacts.emailPrimary,
+        emailSecondary: contacts.emailSecondary,
+        phoneNumber: contacts.phoneNumber,
+        linkedin: contacts.linkedin,
+        priority: contacts.priority,
+        isActive: contacts.isActive,
+        createdAt: contacts.createdAt,
+        companyId: contacts.companyId,
+        companyName: companies.name,
+        companyWebsite: companies.website,
+        companyIndustry: companies.industry,
+      })
+      .from(contacts)
+      .leftJoin(companies, eq(companies.id, contacts.companyId))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(contacts.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const data = rows.map((r) => ({
+      id: r.id,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      emailPrimary: r.emailPrimary,
+      emailSecondary: r.emailSecondary,
+      phonePrimary: r.phoneNumber,
+      phoneSecondary: null,
+      linkedinUrl: r.linkedin,
+      twitterUrl: null,
+      priority: r.priority,
+      status: r.isActive ? 'ACTIVE' : 'INACTIVE',
+      notes: null,
+      lastOutreachAt: null,
+      createdAt: r.createdAt,
+      updatedAt: r.createdAt,
+      company: r.companyId ? {
+        id: r.companyId,
+        name: r.companyName,
+        website: r.companyWebsite,
+        industry: r.companyIndustry
+      } : null,
+      assignedTo: null
+    }));
+
+    return Response.json({
+      success: true,
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching contacts:", error);
+    return Response.json({ success: false, error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// POST /api/contacts - Create new contact
+export async function POST(req: Request) {
+  try {
+    const { env } = getCloudflareContext();
+    const db = getDb(env);
+    const body = await req.json();
+    const {
+      firstName,
+      lastName,
+      emailPrimary,
+      emailSecondary,
+      phonePrimary,
+      phoneSecondary,
+      linkedinUrl,
+      twitterUrl,
+      priority,
+      status,
+      notes,
+      companyId,
+      assignedTo
+    } = body;
+
+    if (!firstName || !lastName || !emailPrimary) {
+      return Response.json({ 
+        success: false, 
+        error: "First name, last name, and primary email are required" 
+      }, { status: 400 });
+    }
+
+    // Check for duplicate email
+    const existingContact = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(eq(contacts.emailPrimary, emailPrimary))
+      .limit(1);
+
+    if (existingContact.length > 0) {
+      return Response.json({ 
+        success: false, 
+        error: "Contact with this email already exists" 
+      }, { status: 409 });
+    }
+
+    // Insert new contact
+    const newContact = await db
+      .insert(contacts)
+      .values({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        emailPrimary: emailPrimary.trim(),
+        emailSecondary: emailSecondary?.trim() || null,
+        phoneNumber: phonePrimary?.trim() || null,
+        linkedin: linkedinUrl?.trim() || null,
+        priority: priority || 'NONE',
+        isActive: status !== 'INACTIVE',
+        companyId: companyId || null,
+        createdAt: new Date()
+      })
+      .returning();
+
+    return Response.json({ 
+      success: true, 
+      data: newContact[0], 
+      message: "Contact created successfully" 
+    });
+
+  } catch (error) {
+    console.error("Error creating contact:", error);
+    return Response.json({ success: false, error: "Internal server error" }, { status: 500 });
+  }
 }

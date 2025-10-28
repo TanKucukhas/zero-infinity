@@ -1,52 +1,69 @@
 export const runtime = "edge";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getCloudflareContext } from "@/server/cloudflare";
+import { getDb } from "@/server/db";
+import { companies, countries, states, cities, contacts } from "@/server/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 // GET /api/companies/[id] - Get single company details
 export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { env } = getCloudflareContext();
-  const companyId = parseInt(params.id, 10);
-  
-  if (isNaN(companyId)) {
-    return Response.json({ success: false, error: "Invalid company ID" }, { status: 400 });
-  }
-
   try {
-    const companyRow = await env.DB.prepare(`
-      SELECT 
-        c.*,
-        co.name AS headquarters_country_name,
-        st.name AS headquarters_state_name,
-        ci.city AS headquarters_city_name
-      FROM companies c
-      LEFT JOIN countries co ON co.code = c.headquarters_country
-      LEFT JOIN states st ON st.code = c.headquarters_state
-      LEFT JOIN cities ci ON ci.id = c.headquarters_city
-      WHERE c.id = ?
-    `).bind(companyId).first();
+    const { env } = getCloudflareContext();
+    const db = getDb(env);
+    const companyId = parseInt(params.id, 10);
+    
+    if (isNaN(companyId)) {
+      return Response.json({ success: false, error: "Invalid company ID" }, { status: 400 });
+    }
 
-    if (!companyRow) {
+    const companyRow = await db
+      .select({
+        id: companies.id,
+        name: companies.name,
+        website: companies.website,
+        linkedinUrl: companies.linkedinUrl,
+        industry: companies.industry,
+        size: companies.size,
+        description: companies.description,
+        logoUrl: companies.logoUrl,
+        headquartersCountry: companies.headquartersCountry,
+        headquartersState: companies.headquartersState,
+        headquartersCity: companies.headquartersCity,
+        createdAt: companies.createdAt,
+        updatedAt: companies.updatedAt,
+        headquartersCountryName: countries.name,
+        headquartersStateName: states.name,
+        headquartersCityName: cities.city,
+      })
+      .from(companies)
+      .leftJoin(countries, eq(countries.code, companies.headquartersCountry))
+      .leftJoin(states, eq(states.code, companies.headquartersState))
+      .leftJoin(cities, eq(cities.id, companies.headquartersCity))
+      .where(eq(companies.id, companyId))
+      .limit(1);
+
+    if (companyRow.length === 0) {
       return Response.json({ success: false, error: "Company not found" }, { status: 404 });
     }
 
     const company = {
-      id: companyRow.id,
-      name: companyRow.name,
-      website: companyRow.website || '',
-      linkedinUrl: companyRow.linkedin_url || '',
-      industry: companyRow.industry || '',
-      size: companyRow.size || '',
-      description: companyRow.description || '',
-      logoUrl: companyRow.logo_url || '',
+      id: companyRow[0].id,
+      name: companyRow[0].name,
+      website: companyRow[0].website || '',
+      linkedinUrl: companyRow[0].linkedinUrl || '',
+      industry: companyRow[0].industry || '',
+      size: companyRow[0].size || '',
+      description: companyRow[0].description || '',
+      logoUrl: companyRow[0].logoUrl || '',
       headquarters: {
-        countryCode: companyRow.headquarters_country,
-        stateCode: companyRow.headquarters_state,
-        cityId: companyRow.headquarters_city,
-        countryName: companyRow.headquarters_country_name,
-        stateName: companyRow.headquarters_state_name,
-        cityName: companyRow.headquarters_city_name
+        countryCode: companyRow[0].headquartersCountry,
+        stateCode: companyRow[0].headquartersState,
+        cityId: companyRow[0].headquartersCity,
+        countryName: companyRow[0].headquartersCountryName,
+        stateName: companyRow[0].headquartersStateName,
+        cityName: companyRow[0].headquartersCityName
       },
-      createdAt: companyRow.created_at,
-      updatedAt: companyRow.updated_at
+      createdAt: companyRow[0].createdAt,
+      updatedAt: companyRow[0].updatedAt
     };
 
     return Response.json({ success: true, data: company });
@@ -58,14 +75,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 // PUT /api/companies/[id] - Update company
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const { env } = getCloudflareContext();
-  const companyId = parseInt(params.id, 10);
-  
-  if (isNaN(companyId)) {
-    return Response.json({ success: false, error: "Invalid company ID" }, { status: 400 });
-  }
-
   try {
+    const { env } = getCloudflareContext();
+    const db = getDb(env);
+    const companyId = parseInt(params.id, 10);
+    
+    if (isNaN(companyId)) {
+      return Response.json({ success: false, error: "Invalid company ID" }, { status: 400 });
+    }
+
     const body = await req.json();
     const {
       name,
@@ -79,102 +97,114 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     } = body;
 
     // Check if company exists
-    const existingCompany = await env.DB.prepare(`
-      SELECT id FROM companies WHERE id = ?
-    `).bind(companyId).first();
+    const existingCompany = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
 
-    if (!existingCompany) {
+    if (existingCompany.length === 0) {
       return Response.json({ success: false, error: "Company not found" }, { status: 404 });
     }
 
     // If name is being updated, check for duplicates
     if (name && name.trim() !== '') {
-      const duplicateCompany = await env.DB.prepare(`
-        SELECT id FROM companies WHERE LOWER(name) = LOWER(?) AND id != ?
-      `).bind(name.trim(), companyId).first();
+      const duplicateCompany = await db
+        .select({ id: companies.id })
+        .from(companies)
+        .where(eq(companies.name, name.trim()))
+        .limit(1);
 
-      if (duplicateCompany) {
-        return Response.json({ success: false, error: "Company with this name already exists" }, { status: 409 });
+      if (duplicateCompany.length > 0 && duplicateCompany[0].id !== companyId) {
+        return Response.json({ 
+          success: false, 
+          error: "Company with this name already exists" 
+        }, { status: 409 });
       }
     }
 
-    // Build update query
-    const updates: string[] = [];
-    const binds: any[] = [];
-
-    if (name !== undefined) { updates.push(`name = ?${binds.length + 1}`); binds.push(name.trim()); }
-    if (website !== undefined) { updates.push(`website = ?${binds.length + 1}`); binds.push(website); }
-    if (linkedinUrl !== undefined) { updates.push(`linkedin_url = ?${binds.length + 1}`); binds.push(linkedinUrl); }
-    if (industry !== undefined) { updates.push(`industry = ?${binds.length + 1}`); binds.push(industry); }
-    if (size !== undefined) { updates.push(`size = ?${binds.length + 1}`); binds.push(size); }
-    if (description !== undefined) { updates.push(`description = ?${binds.length + 1}`); binds.push(description); }
-    if (logoUrl !== undefined) { updates.push(`logo_url = ?${binds.length + 1}`); binds.push(logoUrl); }
-
-    // Headquarters fields
-    if (headquarters) {
-      if (headquarters.countryCode !== undefined) { updates.push(`headquarters_country = ?${binds.length + 1}`); binds.push(headquarters.countryCode); }
-      if (headquarters.stateCode !== undefined) { updates.push(`headquarters_state = ?${binds.length + 1}`); binds.push(headquarters.stateCode); }
-      if (headquarters.cityId !== undefined) { updates.push(`headquarters_city = ?${binds.length + 1}`); binds.push(headquarters.cityId); }
-    }
-
-    // Always update the updated_at timestamp
-    updates.push(`updated_at = ?${binds.length + 1}`);
-    binds.push(Date.now());
-
-    if (updates.length === 0) {
-      return Response.json({ success: false, error: "No fields to update" }, { status: 400 });
-    }
-
-    // Add company ID to binds
-    binds.push(companyId);
-
     // Update company
-    const result = await env.DB.prepare(`
-      UPDATE companies 
-      SET ${updates.join(', ')} 
-      WHERE id = ?${binds.length}
-    `).bind(...binds).run();
+    const updateData: any = {
+      updatedAt: new Date()
+    };
 
-    if (result.changes === 0) {
+    if (name !== undefined) updateData.name = name.trim();
+    if (website !== undefined) updateData.website = website;
+    if (linkedinUrl !== undefined) updateData.linkedinUrl = linkedinUrl;
+    if (industry !== undefined) updateData.industry = industry;
+    if (size !== undefined) updateData.size = size;
+    if (description !== undefined) updateData.description = description;
+    if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
+
+    if (headquarters) {
+      if (headquarters.countryCode !== undefined) updateData.headquartersCountry = headquarters.countryCode;
+      if (headquarters.stateCode !== undefined) updateData.headquartersState = headquarters.stateCode;
+      if (headquarters.cityId !== undefined) updateData.headquartersCity = headquarters.cityId;
+    }
+
+    const result = await db
+      .update(companies)
+      .set(updateData)
+      .where(eq(companies.id, companyId))
+      .returning();
+
+    if (result.length === 0) {
       return Response.json({ success: false, error: "Company not found" }, { status: 404 });
     }
 
-    // Get updated company
-    const companyRow = await env.DB.prepare(`
-      SELECT 
-        c.*,
-        co.name AS headquarters_country_name,
-        st.name AS headquarters_state_name,
-        ci.city AS headquarters_city_name
-      FROM companies c
-      LEFT JOIN countries co ON co.code = c.headquarters_country
-      LEFT JOIN states st ON st.code = c.headquarters_state
-      LEFT JOIN cities ci ON ci.id = c.headquarters_city
-      WHERE c.id = ?
-    `).bind(companyId).first();
+    // Get updated company with location data
+    const companyRow = await db
+      .select({
+        id: companies.id,
+        name: companies.name,
+        website: companies.website,
+        linkedinUrl: companies.linkedinUrl,
+        industry: companies.industry,
+        size: companies.size,
+        description: companies.description,
+        logoUrl: companies.logoUrl,
+        headquartersCountry: companies.headquartersCountry,
+        headquartersState: companies.headquartersState,
+        headquartersCity: companies.headquartersCity,
+        createdAt: companies.createdAt,
+        updatedAt: companies.updatedAt,
+        headquartersCountryName: countries.name,
+        headquartersStateName: states.name,
+        headquartersCityName: cities.city,
+      })
+      .from(companies)
+      .leftJoin(countries, eq(countries.code, companies.headquartersCountry))
+      .leftJoin(states, eq(states.code, companies.headquartersState))
+      .leftJoin(cities, eq(cities.id, companies.headquartersCity))
+      .where(eq(companies.id, companyId))
+      .limit(1);
 
     const company = {
-      id: companyRow.id,
-      name: companyRow.name,
-      website: companyRow.website || '',
-      linkedinUrl: companyRow.linkedin_url || '',
-      industry: companyRow.industry || '',
-      size: companyRow.size || '',
-      description: companyRow.description || '',
-      logoUrl: companyRow.logo_url || '',
+      id: companyRow[0].id,
+      name: companyRow[0].name,
+      website: companyRow[0].website || '',
+      linkedinUrl: companyRow[0].linkedinUrl || '',
+      industry: companyRow[0].industry || '',
+      size: companyRow[0].size || '',
+      description: companyRow[0].description || '',
+      logoUrl: companyRow[0].logoUrl || '',
       headquarters: {
-        countryCode: companyRow.headquarters_country,
-        stateCode: companyRow.headquarters_state,
-        cityId: companyRow.headquarters_city,
-        countryName: companyRow.headquarters_country_name,
-        stateName: companyRow.headquarters_state_name,
-        cityName: companyRow.headquarters_city_name
+        countryCode: companyRow[0].headquartersCountry,
+        stateCode: companyRow[0].headquartersState,
+        cityId: companyRow[0].headquartersCity,
+        countryName: companyRow[0].headquartersCountryName,
+        stateName: companyRow[0].headquartersStateName,
+        cityName: companyRow[0].headquartersCityName
       },
-      createdAt: companyRow.created_at,
-      updatedAt: companyRow.updated_at
+      createdAt: companyRow[0].createdAt,
+      updatedAt: companyRow[0].updatedAt
     };
 
-    return Response.json({ success: true, data: company, message: "Company updated successfully" });
+    return Response.json({ 
+      success: true, 
+      data: company, 
+      message: "Company updated successfully" 
+    });
   } catch (error) {
     console.error("Error updating company:", error);
     return Response.json({ success: false, error: "Internal server error" }, { status: 500 });
@@ -183,20 +213,22 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 // DELETE /api/companies/[id] - Delete company (only if no contacts reference it)
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const { env } = getCloudflareContext();
-  const companyId = parseInt(params.id, 10);
-  
-  if (isNaN(companyId)) {
-    return Response.json({ success: false, error: "Invalid company ID" }, { status: 400 });
-  }
-
   try {
-    // Check if any contacts reference this company
-    const contactCount = await env.DB.prepare(`
-      SELECT COUNT(1) as cnt FROM contacts WHERE company_id = ?
-    `).bind(companyId).first();
+    const { env } = getCloudflareContext();
+    const db = getDb(env);
+    const companyId = parseInt(params.id, 10);
+    
+    if (isNaN(companyId)) {
+      return Response.json({ success: false, error: "Invalid company ID" }, { status: 400 });
+    }
 
-    if (Number(contactCount?.cnt || 0) > 0) {
+    // Check if any contacts reference this company
+    const contactCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(contacts)
+      .where(eq(contacts.companyId, companyId));
+
+    if (contactCount[0]?.count > 0) {
       return Response.json({ 
         success: false, 
         error: "Cannot delete company: it is referenced by contacts" 
@@ -204,15 +236,19 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
 
     // Delete company
-    const result = await env.DB.prepare(`
-      DELETE FROM companies WHERE id = ?
-    `).bind(companyId).run();
+    const result = await db
+      .delete(companies)
+      .where(eq(companies.id, companyId))
+      .returning();
 
-    if (result.changes === 0) {
+    if (result.length === 0) {
       return Response.json({ success: false, error: "Company not found" }, { status: 404 });
     }
 
-    return Response.json({ success: true, message: "Company deleted successfully" });
+    return Response.json({ 
+      success: true, 
+      message: "Company deleted successfully" 
+    });
   } catch (error) {
     console.error("Error deleting company:", error);
     return Response.json({ success: false, error: "Internal server error" }, { status: 500 });

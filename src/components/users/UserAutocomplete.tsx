@@ -167,7 +167,10 @@ export default function UserAutocomplete({
         renderInput={renderInput}
         loading={loading}
         disabled={disabled}
-        isOptionEqualToValue={(option, value) => option.id === value.id}
+        isOptionEqualToValue={(option, value) => {
+          if (typeof option === 'string' || typeof value === 'string') return false;
+          return option.id === value.id;
+        }}
         noOptionsText={
           inputValue.length < minSearchLength 
             ? `Type at least ${minSearchLength} character${minSearchLength > 1 ? 's' : ''} to search`

@@ -111,9 +111,9 @@ export default function CompanyFormModal({
     description: initialData?.description || '',
     logoUrl: initialData?.logoUrl || '',
     headquarters: {
-      countryCode: initialData?.headquartersCountry || 'US',
-      stateCode: initialData?.headquartersState || null,
-      cityId: initialData?.headquartersCity || null,
+      countryCode: initialData?.headquarters?.countryCode || 'US',
+      stateCode: initialData?.headquarters?.stateCode || null,
+      cityId: initialData?.headquarters?.cityId || null,
       stateText: null,
       cityText: null
     }
@@ -137,9 +137,9 @@ export default function CompanyFormModal({
         description: initialData.description || '',
         logoUrl: initialData.logoUrl || '',
         headquarters: {
-          countryCode: initialData.headquartersCountry || 'US',
-          stateCode: initialData.headquartersState || null,
-          cityId: initialData.headquartersCity || null,
+          countryCode: initialData.headquarters?.countryCode || 'US',
+          stateCode: initialData.headquarters?.stateCode || null,
+          cityId: initialData.headquarters?.cityId || null,
           stateText: null,
           cityText: null
         }
