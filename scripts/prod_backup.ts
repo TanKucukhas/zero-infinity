@@ -17,7 +17,7 @@ async function createProdBackup() {
     const backupFile = join(backupDir, `backup_remote_${timestamp}Z.sql`);
     
     // Export D1 database
-    execSync(`wrangler d1 export people_intel --output="${backupFile}"`, {
+    execSync(`wrangler d1 export zero-infinity-db --remote --output="${backupFile}"`, {
       stdio: "inherit"
     });
     
@@ -25,7 +25,7 @@ async function createProdBackup() {
     
     // Also create a clean backup without timestamps for easy reference
     const cleanBackupFile = join(backupDir, "backup_remote_clean.sql");
-    execSync(`wrangler d1 export people_intel --output="${cleanBackupFile}"`, {
+    execSync(`wrangler d1 export zero-infinity-db --remote --output="${cleanBackupFile}"`, {
       stdio: "inherit"
     });
     
