@@ -32,16 +32,18 @@ export async function GET(req: Request) {
       conditions.push(like(cities.cityAscii, `%${searchQuery.toLowerCase()}%`));
     }
     
-    const citiesData = await db
-      .select({
-        id: cities.id,
-        city: cities.city,
-        city_ascii: cities.cityAscii
-      })
+    const citiesRows = await db
+      .select()
       .from(cities)
       .where(and(...conditions))
       .orderBy(sql`${cities.cityAscii} ASC`)
       .limit(50); // Limit results for performance
+    
+    const citiesData = citiesRows.map((row) => ({
+      id: row.id,
+      city: row.city,
+      city_ascii: row.cityAscii
+    }));
     
     return Response.json({
       success: true,
