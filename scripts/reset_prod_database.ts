@@ -127,8 +127,17 @@ async function resetProductionDatabase() {
     }
     console.log("✅ Production tables dropped");
     
-    // Step 6: Import cleaned SQL to production
-    console.log("📥 Step 5: Importing local data to production...");
+    // Step 6: First create schema, then import data
+    console.log("📥 Step 5: Creating schema in production...");
+    try {
+      execSync(`wrangler d1 execute zero-infinity-db --file="drizzle/000_schema_init.sql" --remote`, { stdio: "inherit" });
+      console.log("✅ Schema created in production");
+    } catch (e) {
+      console.error("❌ Failed to create schema in production:", e);
+      process.exit(1);
+    }
+    
+    console.log("📥 Step 6: Importing local data to production...");
     try {
       execSync(`wrangler d1 execute zero-infinity-db --file="${cleanedFile}" --remote`, { stdio: "inherit" });
       console.log("✅ Local data imported to production");
@@ -138,7 +147,7 @@ async function resetProductionDatabase() {
     }
     
     // Step 7: Verify import
-    console.log("🔍 Step 6: Verifying import...");
+    console.log("🔍 Step 7: Verifying import...");
     try {
       const contactCount = execSync(
         'wrangler d1 execute zero-infinity-db --command "SELECT COUNT(*) as count FROM contacts;" --remote',
@@ -163,7 +172,7 @@ async function resetProductionDatabase() {
     }
     
     // Step 8: Cleanup temporary files
-    console.log("🧹 Step 7: Cleaning up temporary files...");
+    console.log("🧹 Step 8: Cleaning up temporary files...");
     try {
       execSync(`rm -f "${exportFile}" "${cleanedFile}"`, { stdio: "inherit" });
       console.log("✅ Temporary files cleaned");
@@ -172,7 +181,7 @@ async function resetProductionDatabase() {
     }
     
     // Step 9: Deploy application
-    console.log("🚀 Step 8: Deploying application...");
+    console.log("🚀 Step 9: Deploying application...");
     try {
       execSync("npm run deploy", { stdio: "inherit" });
       console.log("✅ Application deployed");
