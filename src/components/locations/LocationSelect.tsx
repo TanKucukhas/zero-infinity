@@ -49,16 +49,22 @@ export default function LocationSelect({ value, onChange }: Props) {
     }
   }, [countryCode]);
 
+  const [citySearchQuery, setCitySearchQuery] = React.useState<string>('');
+
   React.useEffect(() => {
     if (countryCode === 'US' && stateCode) {
-      fetch(`/api/locations/cities?country=${countryCode}&state=${stateCode}`).then(r => r.json()).then(res => {
+      const url = citySearchQuery && citySearchQuery.length >= 2 
+        ? `/api/locations/cities/?country=${countryCode}&state=${stateCode}&q=${encodeURIComponent(citySearchQuery)}`
+        : `/api/locations/cities/?country=${countryCode}&state=${stateCode}`;
+      
+      fetch(url).then(r => r.json()).then(res => {
         if (res.success) setCities(res.data);
       });
     } else {
       setCities([]);
       setCityId('');
     }
-  }, [countryCode, stateCode]);
+  }, [countryCode, stateCode, citySearchQuery]);
 
   React.useEffect(() => {
     onChange?.({
@@ -91,11 +97,14 @@ export default function LocationSelect({ value, onChange }: Props) {
             sx={{ minWidth: 180 }}
           />
         )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props}>
-            {option.name}
-          </Box>
-        )}
+        renderOption={(props, option) => {
+          const { key, ...otherProps } = props;
+          return (
+            <Box component="li" key={key} {...otherProps}>
+              {option.name}
+            </Box>
+          );
+        }}
       />
 
       {countryCode === 'US' && (
@@ -115,11 +124,14 @@ export default function LocationSelect({ value, onChange }: Props) {
               sx={{ minWidth: 180 }}
             />
           )}
-          renderOption={(props, option) => (
-            <Box component="li" {...props}>
-              {option.name}
-            </Box>
-          )}
+          renderOption={(props, option) => {
+            const { key, ...otherProps } = props;
+            return (
+              <Box component="li" key={key} {...otherProps}>
+                {option.name}
+              </Box>
+            );
+          }}
         />
       )}
 
@@ -132,19 +144,26 @@ export default function LocationSelect({ value, onChange }: Props) {
           onChange={(event, newValue) => {
             setCityId(newValue?.id || '');
           }}
+          onInputChange={(event, newInputValue) => {
+            setCitySearchQuery(newInputValue);
+          }}
+          filterOptions={(options) => options} // Disable client-side filtering since we do it server-side
           renderInput={(params) => (
             <TextField
               {...params}
               label="City"
-              placeholder="Select city"
+              placeholder="Type to search cities..."
               sx={{ minWidth: 180 }}
             />
           )}
-          renderOption={(props, option) => (
-            <Box component="li" {...props}>
-              {option.city}
-            </Box>
-          )}
+          renderOption={(props, option) => {
+            const { key, ...otherProps } = props;
+            return (
+              <Box component="li" key={key} {...otherProps}>
+                {option.city}
+              </Box>
+            );
+          }}
         />
       )}
 
