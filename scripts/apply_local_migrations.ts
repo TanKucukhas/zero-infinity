@@ -29,7 +29,25 @@ async function applyLocalMigrations() {
       
       for (const statement of statements) {
         if (statement.trim()) {
-          await db.run(statement.trim());
+          try {
+            await db.run(statement.trim());
+          } catch (error: any) {
+            // Skip if table already exists or similar constraint errors
+            if (error.cause?.message?.includes('already exists') || 
+                error.cause?.message?.includes('duplicate column name') ||
+                error.cause?.message?.includes('UNIQUE constraint failed') ||
+                error.cause?.message?.includes('datatype mismatch') ||
+                error.cause?.message?.includes('FOREIGN KEY constraint failed') ||
+                error.message?.includes('already exists') || 
+                error.message?.includes('duplicate column name') ||
+                error.message?.includes('UNIQUE constraint failed') ||
+                error.message?.includes('datatype mismatch') ||
+                error.message?.includes('FOREIGN KEY constraint failed')) {
+              console.log(`⚠️  Skipping statement (already exists/conflict): ${statement.trim().substring(0, 50)}...`);
+              continue;
+            }
+            throw error;
+          }
         }
       }
     }

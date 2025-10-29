@@ -46,6 +46,11 @@ type Person = {
   assignedTo: number | null;
   assignedToName: string | null;
   assignedToLastName: string | null;
+  allAssignments?: Array<{
+    userId: number;
+    userName: string;
+    userLastName: string;
+  }>;
   contacted: boolean;
   location: string;
   fullName: string;
@@ -138,6 +143,7 @@ export default function PeopleTable() {
           assignedTo: contact.assignedTo || null,
           assignedToName: contact.assignedToName || null,
           assignedToLastName: contact.assignedToLastName || null,
+          allAssignments: contact.allAssignments || [],
           contacted: contact.status === 'ACTIVE' && contact.lastOutreachAt ? true : false,
           location: '', // API'de location bilgisi yok
           fullName: contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
@@ -562,11 +568,24 @@ export default function PeopleTable() {
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
               {people.map((person) => {
-                const assignedText = person.assignedToName && person.assignedToLastName 
-                  ? `${person.assignedToName} ${person.assignedToLastName}`
-                  : person.assignedToName || "";
-                const initials = (assignedText ? assignedText.substring(0, 2) : "UN").toUpperCase();
-                const avatarColor = getAvatarColor(initials);
+                // Handle multiple assignments
+                const assignments = person.allAssignments || [];
+                const hasAssignments = assignments.length > 0;
+                const firstAssignment = assignments[0];
+                
+                // Use legacy fields if allAssignments is empty but assignedTo exists
+                const assignedText = firstAssignment 
+                  ? `${firstAssignment.userName || ''} ${firstAssignment.userLastName || ''}`.trim()
+                  : (person.assignedToName && person.assignedToLastName 
+                      ? `${person.assignedToName} ${person.assignedToLastName}`.trim()
+                      : person.assignedToName || "");
+                
+                // Create initials from first letter of first name and first letter of last name
+                const initials = assignedText 
+                  ? assignedText.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
+                  : "UN";
+                
+                const avatarColor = getAvatarColor(initials.toUpperCase());
                 
                 return (
                   <tr 
@@ -709,12 +728,14 @@ export default function PeopleTable() {
                     <td className="px-4 py-1.5">
                       {assignedText ? (
                         <div className="flex items-center gap-2">
-                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium ${avatarColor.bg} ${avatarColor.text}`}>
+                          <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium ${avatarColor.bg} ${avatarColor.text}`} title={`Assigned to ${assignedText}`}>
                             {initials}
                           </div>
-                          <span className="text-xs text-zinc-600 dark:text-zinc-400" title={`Assigned to ${assignedText}`}>
-                            {assignedText}
-                          </span>
+                          {assignments.length > 1 && (
+                            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                              +{assignments.length - 1} more
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-zinc-400 dark:text-zinc-600">Unassigned</span>

@@ -38,6 +38,13 @@
       "id": 2,
       "name": "John Doe"
     },
+    "allAssignments": [
+      {
+        "userId": 2,
+        "userName": "John",
+        "userLastName": "Doe"
+      }
+    ],
     "location": "San Francisco, CA"
   },
   {
@@ -79,6 +86,13 @@
       "id": 3,
       "name": "Jane Smith"
     },
+    "allAssignments": [
+      {
+        "userId": 3,
+        "userName": "Jane",
+        "userLastName": "Smith"
+      }
+    ],
     "location": "New York, NY"
   },
   {
@@ -120,6 +134,13 @@
       "id": 1,
       "name": "Admin User"
     },
+    "allAssignments": [
+      {
+        "userId": 1,
+        "userName": "Admin",
+        "userLastName": "User"
+      }
+    ],
     "location": "Toronto, ON"
   },
   {

@@ -1,9 +1,11 @@
 import { getCloudflareContext } from "@/server/cloudflare";
-import { getDb } from "@/server/db";
+import { getDb } from "@/server/db/client";
 import { isMockMode } from "@/server/db/config";
 import { readMockJson } from "@/server/db/mock";
 import { contacts, companies, users, contactAssignments } from "@/server/db/schema";
 import { eq, like, desc, and } from "drizzle-orm";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 // Force dynamic rendering for Cloudflare Pages
 export const dynamic = 'force-dynamic';
@@ -12,16 +14,34 @@ export const dynamic = 'force-dynamic';
 // Supports: page, limit, search, priority
 export async function GET(req: Request) {
   try {
-    const { env } = await getCloudflareContext();
+    console.log("🔍 Starting contacts API request");
+    let env;
+    try {
+      const context = await getCloudflareContext();
+      env = context.env;
+      console.log("🔍 Cloudflare context obtained:", !!env);
+    } catch (error) {
+      console.log("🔍 Cloudflare context failed, using local env:", error.message);
+      env = null; // Local development
+    }
+    console.log("🔍 Environment variables:", {
+      DB_SOURCE: process.env.DB_SOURCE,
+      DEV_SQLITE_PATH: process.env.DEV_SQLITE_PATH
+    });
+    
     // Mock modu ise dosyadan oku ve server-side paginate et
     if (isMockMode(env)) {
+      console.log("🔍 Using mock mode");
       const url = new URL(req.url);
       const page = parseInt(url.searchParams.get('page') || '1', 10);
       const limit = parseInt(url.searchParams.get('limit') || '20', 10);
       const search = (url.searchParams.get('search') || '').trim().toLowerCase();
       const priority = (url.searchParams.get('priority') || '').toUpperCase();
 
-      const all = await readMockJson<any[]>("contacts", req.url);
+      // Read mock data directly from file to preserve all fields
+      const mockDataPath = join(process.cwd(), 'public', 'mock', 'contacts.json');
+      const mockDataRaw = readFileSync(mockDataPath, 'utf-8');
+      const all = JSON.parse(mockDataRaw);
       const filtered = all.filter((c) => {
         const matchesSearch = !search ||
           `${c.firstName} ${c.lastName}`.toLowerCase().includes(search) ||
@@ -48,13 +68,19 @@ export async function GET(req: Request) {
       });
     }
 
-    console.log("Cloudflare context obtained");
+    console.log("🔍 Using database mode");
     const db = getDb(env);
-    console.log("Database connection obtained");
+    console.log("🔍 Database connection obtained");
     
     // Debug: Check if we have any contacts at all
-    const totalContacts = await db.select().from(contacts).limit(1);
-    console.log(`🔍 Database connection successful`);
+    try {
+      const totalContacts = await db.select().from(contacts).limit(1);
+      console.log(`🔍 Database connection successful, found ${totalContacts.length} contacts`);
+    } catch (dbError) {
+      console.error("🔍 Database connection failed:", dbError);
+      throw dbError;
+    }
+    
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '20', 10);
@@ -75,7 +101,17 @@ export async function GET(req: Request) {
     // Get contacts with company data and assignments
     let rows;
     try {
-      // Try with raw SQL first to debug
+      // Build WHERE clause for raw SQL
+      const whereClause = [];
+      if (search) {
+        whereClause.push(`c.first_name LIKE '%${search}%'`);
+      }
+      if (priority && priority !== 'ALL') {
+        whereClause.push(`c.priority = '${priority}'`);
+      }
+      const whereSQL = whereClause.length > 0 ? `WHERE ${whereClause.join(' AND ')}` : '';
+
+      // Try with raw SQL first to debug - Get first assignment per contact
       const rawQuery = `
         SELECT 
           c.*,
@@ -87,18 +123,34 @@ export async function GET(req: Request) {
           u.last_name as assigned_to_last_name
         FROM contacts c
         LEFT JOIN companies comp ON c.company_id = comp.id
-        LEFT JOIN contact_assignments ca ON c.id = ca.contact_id
+        LEFT JOIN (
+          SELECT contact_id, user_id,
+                 ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY id) as rn
+          FROM contact_assignments
+        ) ca ON c.id = ca.contact_id AND ca.rn = 1
         LEFT JOIN users u ON ca.user_id = u.id
+        ${whereSQL}
         ORDER BY c.created_at DESC
         LIMIT ${limit} OFFSET ${(page - 1) * limit}
       `;
       
       console.log(`🔍 Raw SQL query:`, rawQuery);
-      const rawResult = await (env.DB as any).prepare(rawQuery).all();
+      
+      // Use local SQLite directly (not Cloudflare D1)
+      const Database = require('better-sqlite3');
+      const sqlite = new Database(join(process.cwd(), '.data', 'dev.sqlite'));
+      const rawResult = sqlite.prepare(rawQuery).all();
+      sqlite.close();
+      
       console.log(`🔍 Raw SQL result:`, JSON.stringify(rawResult, null, 2));
       
-      // Convert raw result to Drizzle format
-      rows = rawResult.results.map((row: any) => ({
+      // Handle both Cloudflare D1 format (rawResult.results) and local SQLite format (rawResult)
+      const results = Array.isArray(rawResult) ? rawResult : (rawResult.results || []);
+      console.log(`🔍 Results length: ${results.length}`);
+      console.log(`🔍 First result:`, results[0]);
+      
+      // Convert raw result to Drizzle format (no grouping needed since we get only first assignment)
+      rows = results.map((row: any) => ({
         contacts: {
           id: row.id,
           firstName: row.first_name,
@@ -130,18 +182,16 @@ export async function GET(req: Request) {
           name: row.assigned_to_name,
           lastName: row.assigned_to_last_name,
         } : null,
+        assignments: row.assigned_to ? [{
+          userId: row.assigned_to,
+          userName: row.assigned_to_name,
+          userLastName: row.assigned_to_last_name,
+        }] : [],
       }));
       
     } catch (e) {
-      console.warn('Raw SQL failed, falling back to Drizzle:', e);
-      // Fallback to Drizzle
-      rows = await db
-        .select()
-        .from(contacts)
-        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-        .orderBy(desc(contacts.createdAt))
-        .limit(limit)
-        .offset((page - 1) * limit);
+      console.error('Raw SQL failed:', e);
+      throw e; // Don't fallback to Drizzle as it causes duplicate issues
     }
 
     console.log(`🔍 Final query returned ${rows.length} rows`);
@@ -177,8 +227,9 @@ export async function GET(req: Request) {
         assignedTo: r.contactAssignments?.userId || null,
         assignedToName: r.users?.name,
         assignedToLastName: r.users?.lastName,
+        // Add all assignments for multi-assignment support
+        allAssignments: r.assignments || [],
       };
-      console.log(`🔍 Transformed data:`, JSON.stringify(transformed, null, 2));
       return transformed;
     });
 
