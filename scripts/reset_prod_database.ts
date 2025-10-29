@@ -17,7 +17,7 @@ import { join } from "path";
 async function resetProductionDatabase() {
   try {
     const args = process.argv.slice(2);
-    const forceReset = args.includes("--yes");
+    const forceReset = args.includes("--yes") || args.includes("yes");
     
     console.log("🔄 Starting production database full reset...");
     
