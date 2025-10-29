@@ -81,19 +81,12 @@ async function resetProductionDatabase() {
     const cleanedSql = sqlContent
       .split('\n')
       .filter(line => {
-        // Remove SQLite-specific commands
-        if (line.includes('PRAGMA') || 
-            line.includes('BEGIN TRANSACTION') || 
-            line.includes('COMMIT') ||
-            line.includes('ROLLBACK') ||
-            line.includes('sqlite_sequence') ||
-            line.includes('CREATE UNIQUE INDEX') ||
-            line.includes('CREATE INDEX') ||
-            line.includes('CREATE TABLE') ||
-            line.includes('CREATE UNIQUE INDEX')) {
-          return false;
+        const trimmed = line.trim();
+        // Only keep INSERT statements
+        if (trimmed.startsWith('INSERT INTO')) {
+          return true;
         }
-        return line.trim().length > 0;
+        return false;
       })
       .join('\n');
     
