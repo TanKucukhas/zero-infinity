@@ -1,0 +1,10 @@
+INSERT INTO users VALUES(0,'Tan','Kucukhas','tan@zeroinfinity.ai','admin',1761673654000,'active');
+INSERT INTO users VALUES(1,'Yetkin','Yuce','yetkin@zeroinfinity.ai','admin',1761673654000,'active');
+INSERT INTO users VALUES(2,'Hemal','Trivedi','hemal@zeroinfinity.ai','editor',1761673654000,'active');
+INSERT INTO users VALUES(3,'Cynthia','Kane','cynthia@zeroinfinity.ai','editor',1761673654000,'active');
+INSERT INTO users VALUES(4,'Prerana','','prerana@zeroinfinity.ai','viewer',1761673654000,'active');
+INSERT INTO users VALUES(5,'Matt','A.','matt.a+external@zeroinfinity.ai','external',1761673654000,'active');
+INSERT INTO users VALUES(6,'Prerana','','prerana+external@zeroinfinity.ai','external',1761673654000,'active');
+INSERT INTO countries VALUES('AF','Afghanistan');
+INSERT INTO countries VALUES('AX','Åland Islands');
+INSERT INTO countries VALUES('AL','Albania');
