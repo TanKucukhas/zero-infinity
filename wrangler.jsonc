@@ -21,9 +21,9 @@
 	"d1_databases": [
 		{ "binding": "DB", "database_name": "zero-infinity-db", "database_id": "cb12f3fa-5a09-4d89-89e1-142d92691a59" }
 	],
-	"routes": [
-		{ "pattern": "app.zeroinfinity.ai/*", "zone_name": "zeroinfinity.ai" }
-	],
+	// "routes": [
+	// 	{ "pattern": "app.zeroinfinity.ai/*", "zone_name": "zeroinfinity.ai" }
+	// ],
 	"vars": { 
 		"NODE_ENV": "production",
 		"DB_SOURCE": "prod"
