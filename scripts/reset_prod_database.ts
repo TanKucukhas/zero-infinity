@@ -77,7 +77,7 @@ async function resetProductionDatabase() {
     console.log("🧹 Step 3: Cleaning SQL for D1 compatibility...");
     const sqlContent = readFileSync(exportFile, "utf8");
     
-    // Remove SQLite-specific commands that D1 doesn't support
+    // Remove SQLite-specific commands and CREATE TABLE statements (schema already exists)
     const cleanedSql = sqlContent
       .split('\n')
       .filter(line => {
@@ -88,7 +88,9 @@ async function resetProductionDatabase() {
             line.includes('ROLLBACK') ||
             line.includes('sqlite_sequence') ||
             line.includes('CREATE UNIQUE INDEX') ||
-            line.includes('CREATE INDEX')) {
+            line.includes('CREATE INDEX') ||
+            line.includes('CREATE TABLE') ||
+            line.includes('CREATE UNIQUE INDEX')) {
           return false;
         }
         return line.trim().length > 0;
